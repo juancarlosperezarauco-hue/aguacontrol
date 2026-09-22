@@ -11,6 +11,12 @@ public static class Api {
  public static void Map(WebApplication app,bool sandbox){
   var api=app.MapGroup("/api").RequireAuthorization();
   api.MapGet("/dashboard",async(HttpContext c,AquaService s)=>await s.Dashboard(await Actor(c,s)));
+  async Task<IReadOnlyDictionary<string,string>> ReadCommercialFiles(HttpRequest request) {
+   var form=await request.ReadFormAsync();var result=new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
+   foreach(var file in form.Files){using var reader=new StreamReader(file.OpenReadStream());result[Path.GetFileName(file.FileName)]=await reader.ReadToEndAsync();}return result;
+  }
+  api.MapPost("/commercial-import/validate",async(HttpContext c,AquaService s,CommercialImportService importer)=>{var a=await Actor(c,s);a.Require("customers.write");a.Require("billing.write");return await importer.Validate(await ReadCommercialFiles(c.Request));});
+  api.MapPost("/commercial-import/execute",async(HttpContext c,AquaService s,CommercialImportService importer)=>await importer.Execute(await Actor(c,s),await ReadCommercialFiles(c.Request)));
   api.MapGet("/catalogs",async(HttpContext c,AquaService s)=>{var a=await Actor(c,s);return CatalogService.Definitions.Where(d=>a.Can(d.Read)).Select(d=>new{d.Key,d.Label,canWrite=a.Can(d.Write),fields=d.Fields.Select(f=>new{name=char.ToLowerInvariant(f[0])+f[1..],type=d.Type.GetProperty(f)!.PropertyType.Name,nullable=Nullable.GetUnderlyingType(d.Type.GetProperty(f)!.PropertyType)!=null})});});
   api.MapGet("/catalog/{key}",async(string key,int? page,string? search,HttpContext c,AquaService s,CatalogService cats)=>await cats.List(await Actor(c,s),key,page??1,search));
   api.MapPost("/catalog/{key}",async(string key,JsonElement body,HttpContext c,AquaService s,CatalogService cats)=>await cats.Save(await Actor(c,s),key,null,body));

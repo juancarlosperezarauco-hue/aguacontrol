@@ -11,6 +11,8 @@ Esta carpeta contiene el formato de intercambio para cargar el padrón real en A
 5. `05_instalaciones_medidor.csv`
 6. `06_tarifas.csv`
 7. `07_contratos.csv`
+8. `08_facturas_historicas.csv` (opcional)
+9. `09_pagos_historicos.csv` (opcional)
 
 Guarde cada archivo como CSV UTF-8, separado por comas. No cambie los encabezados. Las fechas usan `AAAA-MM-DD`, los valores decimales usan punto y los valores lógicos son `true` o `false`.
 
@@ -34,5 +36,9 @@ Guarde cada archivo como CSV UTF-8, separado por comas. No cambie los encabezado
 | Instalaciones | `codigo_conexion`, `serie`, `lectura_inicial`, `fecha_instalacion` |
 | Tarifas | `nombre`, `moneda`, `cargo_fijo`, `precio_m3`, `fecha_inicio`, `activa` |
 | Contratos | `documento`, `numero_cuenta`, `codigo_conexion`, `tarifa`, `fecha_inicio`, `fecha_fin` |
+| Facturas históricas | `numero_cuenta`, `codigo_conexion`, `periodo`, `numero_factura`, `fecha_emision`, `fecha_vencimiento`, `consumo`, `total`, `moneda` |
+| Pagos históricos | `numero_cuenta`, `referencia`, `fecha_pago`, `monto`, `metodo`, `moneda` |
 
 Los campos vacíos de `codigo_fijo`, `id_sector`, `id_via` y `fecha_fin` son aceptados cuando corresponda. Cada fila debe estar completa en las demás columnas requeridas.
+
+Las facturas y pagos históricos se importan en una segunda ejecución, después de crear y verificar el padrón. Se conservan con su fecha y referencia original, y se concilian contra cada cuenta.
