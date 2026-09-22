@@ -47,7 +47,7 @@ El aprovisionamiento crea `aquadmin`; no use la contraseña ilustrativa de este 
 ## Recorrido por módulos
 
 1. **Usuarios y permisos:** crear cuentas, asignar un rol, desactivar, restablecer contraseña y vincular clientes al portal. Las contraseñas restablecidas requieren cambio. No es posible cambiar el propio rol desde la operación administrativa.
-2. **Clientes y abonados:** crear cliente, cuenta y conexión; registrar dirección y coordenadas verificadas. Código fijo, vía y sector se relacionan por sus IDs existentes.
+2. **Clientes y abonados:** crear cliente, cuenta y conexión; registrar dirección y coordenadas verificadas. Cada conexión exige un Código Fijo SIG único, por lo que el vínculo territorial queda trazable como Código Fijo → conexión → contrato → cliente. Vía y sector son referencias complementarias.
 3. **Tarifas:** crear una versión con cargo fijo y precio por m³, o tramos contiguos desde cero hasta ilimitado. Una tarifa utilizada por un contrato no puede editarse; crear otra versión.
 4. **Contratos:** asociar cliente, cuenta, conexión y tarifa. Solo hay un contrato abierto por cuenta y por conexión. Cerrar el anterior antes de cambiar titular. Las facturas anteriores siguen ligadas a su contrato original.
 5. **Medidores:** crear medidor e instalarlo con lectura inicial. Para reemplazarlo, registrar lectura final del anterior. Se conserva el historial de instalaciones.

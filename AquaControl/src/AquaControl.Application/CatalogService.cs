@@ -35,7 +35,7 @@ public class CatalogService(IData db,AquaService service){
   foreach(var field in def.Fields){var property=typeof(T).GetProperty(field)!;var jsonName=char.ToLowerInvariant(field[0])+field[1..];if(body.TryGetProperty(jsonName,out var value))property.SetValue(entity,JsonSerializer.Deserialize(value.GetRawText(),property.PropertyType));}
   foreach(var field in new[]{"Name","Code","Number","Serial"}){var p=typeof(T).GetProperty(field);if(p!=null)Require(!string.IsNullOrWhiteSpace(p.GetValue(entity)?.ToString()),$"{field} es obligatorio.");}
   var results=new List<System.ComponentModel.DataAnnotations.ValidationResult>();Require(System.ComponentModel.DataAnnotations.Validator.TryValidateObject(entity,new(entity),results,true),string.Join("; ",results.Select(x=>x.ErrorMessage)));
-  if(entity is Connection c)Require(Math.Abs(c.Longitude)<=180&&Math.Abs(c.Latitude)<=90,"Coordenadas inválidas.");
+  if(entity is Connection c){Require(c.FixedCodeId.HasValue,"Seleccione el Código Fijo SIG asociado a la conexión.");Require(Math.Abs(c.Longitude)<=180&&Math.Abs(c.Latitude)<=90,"Coordenadas inválidas.");}
   if(entity is Tariff t)Require(t.FixedCharge>=0&&t.UnitPrice>=0&&t.Currency=="BOB","Importes no negativos y moneda BOB requerida en esta versión.");
   if(entity is TariffBand b)Require(b.From>=0&&(b.To==null||b.To>b.From)&&b.Price>=0,"Tramo inválido.");
   if(entity is WorkType w)Require(w.Effect is "NINGUNO" or "CORTE" or "RECONEXION","Efecto inválido.");

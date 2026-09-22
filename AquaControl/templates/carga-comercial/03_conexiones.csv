@@ -1,3 +1,3 @@
 codigo_conexion,codigo_fijo,id_sector,id_via,direccion,longitud,latitud,estado
-DEMO-CNX-0001,,,,Av. Demostración 100,-60.9650,-16.3820,ACTIVA
-DEMO-CNX-0002,,,,Calle Demostración 200,-60.9660,-16.3830,ACTIVA
+DEMO-CNX-0001,6714,,,Av. Demostración 100,-60.9650,-16.3820,ACTIVA
+DEMO-CNX-0002,7641,,,Calle Demostración 200,-60.9660,-16.3830,ACTIVA

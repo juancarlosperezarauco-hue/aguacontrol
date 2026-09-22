@@ -55,6 +55,13 @@ public partial class AquaService(IData db,IPaymentGateway gateway) {
   var invoice=new Invoice{Number="FAC-"+Guid.NewGuid().ToString("N")[..16].ToUpperInvariant(),ContractId=contract.Id,ReadingId=reading.Id,Period=reading.Period,DueAt=r.DueAt,Consumption=consumption,Total=Money(tariff.FixedCharge)+Money(variable),Currency=tariff.Currency,HolderName=client.Name,HolderAddress=client.Address};
   db.Set<Invoice>().Add(invoice);await db.SaveChangesAsync();db.Set<InvoiceLine>().AddRange(new InvoiceLine{InvoiceId=invoice.Id,Description="Cargo fijo · "+tariff.Name,Quantity=1,UnitPrice=tariff.FixedCharge,Amount=Money(tariff.FixedCharge)},new InvoiceLine{InvoiceId=invoice.Id,Description="Consumo m³ · "+tariff.Name,Quantity=consumption,UnitPrice=consumption>0?variable/consumption:0,Amount=Money(variable)});Audit(a,"factura.emitir",invoice.Number);await db.SaveChangesAsync();await tx.CommitAsync();return invoice;
  }
+ public async Task<object> GenerateInvoices(Actor a,string period,DateTime dueAt){
+  a.Require("billing.write");Require(DateTime.TryParseExact(period,"yyyy-MM",CultureInfo.InvariantCulture,DateTimeStyles.None,out _),"Período requerido: AAAA-MM.");Require(dueAt.Date>=DateTime.UtcNow.Date,"Vencimiento inválido.");
+  var candidates=await (from c in db.Set<Contract>() join i in db.Set<MeterInstallation>() on c.ConnectionId equals i.ConnectionId join r in db.Set<Reading>() on i.Id equals r.InstallationId where c.End==null&&i.End==null&&r.Period==period&&!db.Set<Invoice>().Any(f=>f.ContractId==c.Id&&f.Period==period) select new{c.Id,ReadingId=r.Id}).ToListAsync();
+  var emitted=new List<int>();var errors=new List<object>();
+  foreach(var item in candidates){try{var invoice=await Bill(a,new NewInvoice(item.Id,item.ReadingId,dueAt));emitted.Add(invoice.Id);}catch(BusinessException e){errors.Add(new{contractId=item.Id,error=e.Message});}}
+  return new{period,emitted=emitted.Count,invoiceIds=emitted,errors};
+ }
  public async Task<decimal> Balance(int invoiceId){
   var i=await Get<Invoice>(invoiceId);var adjustments=await db.Set<InvoiceAdjustment>().Where(x=>x.InvoiceId==invoiceId).SumAsync(x=>(decimal?)x.Amount)??0;
   var reversed=db.Set<PaymentReversal>().Select(x=>x.PaymentId);var paid=await db.Set<PaymentAllocation>().Where(x=>x.InvoiceId==invoiceId&&!reversed.Contains(x.PaymentId)).SumAsync(x=>(decimal?)x.Amount)??0;return Money(i.Total+adjustments-paid);
