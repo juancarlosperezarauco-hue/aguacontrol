@@ -1,0 +1,207 @@
+[
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\ScriptDatabaseV13\\01_CrearBD.sql",
+    "Bytes": 8617,
+    "SHA256": "CB4204DDEFC9FFA9253F94CDCA9DF760AB1FAA754BEC079E6963A033A14F0B68"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\ScriptDatabaseV13\\02_Importar_SHP.md",
+    "Bytes": 1595,
+    "SHA256": "D23A3EBB9B216AC87D2E951EB9BD0457F8749B23819BDB93D5A994B659F90A4D"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\ScriptDatabaseV13\\03_Crear_Usuario.md",
+    "Bytes": 938,
+    "SHA256": "01D41684C83AF1D7973DFEA92F6275BF70F52FF9ABEC37A8E6FB1F608068D6E7"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\ScriptDatabaseV13\\04_Actualizar_CodigosFijos_Estado.sql",
+    "Bytes": 2831,
+    "SHA256": "F74811C0EB447F94472C0984DDE400AED1481126B2ED38D7951C984E3A7F349A"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\ScriptDatabaseV13\\05_Optimizar_Relacion_CodigoFijo_Lote.sql",
+    "Bytes": 2544,
+    "SHA256": "91965F94B9835662A5B165460E062EF1EC93CD538464D5ADA6C9780B04EC9C8C"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\ScriptDatabaseV13\\06_Agregar_Nombre_Vias.sql",
+    "Bytes": 283,
+    "SHA256": "CBAD6FDB7BC6C91E825DE465393F16C65CF4CF75827ED8B8A122F32B085E237A"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\ScriptDatabaseV13\\07_Roles_Usuarios_Menu.sql",
+    "Bytes": 2791,
+    "SHA256": "8B184A98481368D516CECE88F0B27317A9452FDA9970EDA4E31591F96D6CC1C8"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\ScriptDatabaseV13\\08_MenuOpciones_UsuarioMenu.sql",
+    "Bytes": 5488,
+    "SHA256": "1A42EF9DDBE9E2786B9BF3632DC51D603414E24DF5552C158D19D522ED244B1E"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_CodigoFijo_4326.cpg",
+    "Bytes": 5,
+    "SHA256": "3AD3031F5503A4404AF825262EE8232CC04D4EA6683D42C5DD0A2F2A27AC9824"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_CodigoFijo_4326.dbf",
+    "Bytes": 2370696,
+    "SHA256": "7261684000F9715218AF68F7BEB2BFCAE91A42A85B9EB1EAEE524FB898F7C237"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_CodigoFijo_4326.prj",
+    "Bytes": 145,
+    "SHA256": "A02A27B1D1982C8516D83398E85A3C8B1AEF1713C13EF4D84D7BDE17430C07C4"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_CodigoFijo_4326.sbn",
+    "Bytes": 59436,
+    "SHA256": "3174F857AAA8D753340B1A586872575E28DAC866617E5D0E81946728C729DCA1"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_CodigoFijo_4326.sbx",
+    "Bytes": 2028,
+    "SHA256": "AA29F35F28C282F9709F0328013A00B0692514DD128CCDD7A542C9AB5AC03ABF"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_CodigoFijo_4326.shp",
+    "Bytes": 276024,
+    "SHA256": "9FF1977DDBBAF6EF8ECB5E056270C6E86D06DD64F221DE6685FC16384798F78D"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_CodigoFijo_4326.shp.xml",
+    "Bytes": 63378,
+    "SHA256": "6C37E9FAEAF45994C628CB185C2429B89457F8E805689D9809D1278E1C6D16BE"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_CodigoFijo_4326.shx",
+    "Bytes": 50268,
+    "SHA256": "B41D0027E992DBF38D931672631149E002ADD66DB7077C4BB9F241E91C9FB690"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_LOTES_4326.cpg",
+    "Bytes": 5,
+    "SHA256": "3AD3031F5503A4404AF825262EE8232CC04D4EA6683D42C5DD0A2F2A27AC9824"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_LOTES_4326.dbf",
+    "Bytes": 336280,
+    "SHA256": "84581CA327858CB6446323C4A3358DB782D196DAEF2C3E57C7FCF0EFDBB792A1"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_LOTES_4326.prj",
+    "Bytes": 145,
+    "SHA256": "A02A27B1D1982C8516D83398E85A3C8B1AEF1713C13EF4D84D7BDE17430C07C4"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_LOTES_4326.sbn",
+    "Bytes": 142532,
+    "SHA256": "164C962C6CB0681B3E47A7248645A638CDDA62565524AC1E60DB1BFAA623AE35"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_LOTES_4326.sbx",
+    "Bytes": 5156,
+    "SHA256": "EF2C6E842B362D6157A0EC7D9A9B13B0690AA267AF8BDEE8D7CB5F5F4CE2078B"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_LOTES_4326.shp",
+    "Bytes": 4283808,
+    "SHA256": "ADB7345CC8F4A20D44FC6DA425F10E72B489EDD394B35B356D0CD68E08BE958D"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_LOTES_4326.shp.xml",
+    "Bytes": 50957,
+    "SHA256": "FCE5476F9DF8E5682E20869C99122A3C21B41609E71564EF10FB4E9FEB6EAF58"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_LOTES_4326.shx",
+    "Bytes": 122348,
+    "SHA256": "93C5CC61CD1C2FF626DFD410C92E7EF9C05430D0658EEE909A07F86090C98127"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_MZA_4326.cpg",
+    "Bytes": 5,
+    "SHA256": "3AD3031F5503A4404AF825262EE8232CC04D4EA6683D42C5DD0A2F2A27AC9824"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_MZA_4326.dbf",
+    "Bytes": 45038,
+    "SHA256": "C7A3BBD5B0C1B8923D24C882AA6E1CC2B187248CB7AA15BAEE18C203E5BC3D34"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_MZA_4326.prj",
+    "Bytes": 145,
+    "SHA256": "A02A27B1D1982C8516D83398E85A3C8B1AEF1713C13EF4D84D7BDE17430C07C4"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_MZA_4326.sbn",
+    "Bytes": 8540,
+    "SHA256": "3798B8E2427F200773A63644684659119E4B9FCBAFB8D778B628A52D4F0AC321"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_MZA_4326.sbx",
+    "Bytes": 644,
+    "SHA256": "13A57DF5BB96220BEE8FA9F2ED998227E32121ECE056EAB142D41D9B9A6CDDDE"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_MZA_4326.shp",
+    "Bytes": 351668,
+    "SHA256": "EA042D24984896D58163C0E929BEBE0CD23CE984626F5A6589E085D802C5BBD8"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_MZA_4326.shp.xml",
+    "Bytes": 8715,
+    "SHA256": "451BDC5C3CEC1B4BE03AED17531BAA0AB19CC0A533BB6E1A455A6E83BDAF3256"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_MZA_4326.shx",
+    "Bytes": 7004,
+    "SHA256": "F36FF81A7EBF43ABBC2C6D3BC3474130952211F8B7C3701F1313A481889FE2DB"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_VIAS_4326.CPG",
+    "Bytes": 5,
+    "SHA256": "3AD3031F5503A4404AF825262EE8232CC04D4EA6683D42C5DD0A2F2A27AC9824"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_VIAS_4326.dbf",
+    "Bytes": 96912,
+    "SHA256": "A639EF73941209A8E8D0FEBAB2072481EFAAE079F1E1BF94CC1FCC23D2E21417"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_VIAS_4326.prj",
+    "Bytes": 145,
+    "SHA256": "A02A27B1D1982C8516D83398E85A3C8B1AEF1713C13EF4D84D7BDE17430C07C4"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_VIAS_4326.sbn",
+    "Bytes": 6084,
+    "SHA256": "225F738D2617EF0A57B21C6A765D9D04C6BFD3950429B543906D82121C283D96"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_VIAS_4326.sbx",
+    "Bytes": 548,
+    "SHA256": "9CAE20A0A945BFF5218D39FFAEA1442ABEFC6BD717FF8B958B7DC4BEBC723FF6"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_VIAS_4326.shp",
+    "Bytes": 118044,
+    "SHA256": "9976D5564BD7D115349676CE7C2086CC76D3A89A7CF0531E6C12CB45883DA9B3"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_VIAS_4326.shp.xml",
+    "Bytes": 8812,
+    "SHA256": "3B521E32A4B39BA544D2228BB8CE92C06B0AF67AC86D68A98E8CAEB2F156BC3C"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\DatosSIG_Reproj\\Exp_MapaBase_VIAS_4326.shx",
+    "Bytes": 4724,
+    "SHA256": "43200E80EAA6C486BD19F00C5CB8AF5F75E80E333C5BA6F479C62CB4108FC761"
+  },
+  {
+    "Archivo": "C:\\Users\\HP\\OneDrive\\Desktop\\Especificaciones_Proyecto_VisorDatosSIG_2026\\Especificaciones_Proyecto_VisorDatosSIG_2026 V2.pdf",
+    "Bytes": 743591,
+    "SHA256": "96971136934C09C36CE84866AA8E7B871CC6A0DC30619CB68781CBBA32EAC839"
+  }
+]

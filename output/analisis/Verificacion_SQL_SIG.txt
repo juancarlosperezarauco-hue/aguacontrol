@@ -1,0 +1,33 @@
+BaseActual                                                                                                                      
+--------------------------------------------------------------------------------------------------------------------------------
+AquaControlDev                                                                                                                  
+Tabla                                                                                                                            Indice                                                                                                                           Deshabilitado bounding_box_xmin        bounding_box_ymin        bounding_box_xmax        bounding_box_ymax       
+-------------------------------------------------------------------------------------------------------------------------------- -------------------------------------------------------------------------------------------------------------------------------- ------------- ------------------------ ------------------------ ------------------------ ------------------------
+Lotes                                                                                                                            SIX_Lotes_Geom                                                                                                                               0      -61.100000000000001                    -16.5      -60.799999999999997      -16.199999999999999
+CodigosFijos                                                                                                                     SIX_CodigosFijos_Geom                                                                                                                        0      -61.100000000000001                    -16.5      -60.799999999999997      -16.199999999999999
+Manzanas                                                                                                                         SIX_Manzanas_Geom                                                                                                                            0      -61.100000000000001                    -16.5      -60.799999999999997      -16.199999999999999
+Vias                                                                                                                             SIX_Vias_Geom                                                                                                                                0      -61.100000000000001                    -16.5      -60.799999999999997      -16.199999999999999
+Relacion                                                                                                                         Deshabilitada NoVerificada
+-------------------------------------------------------------------------------------------------------------------------------- ------------- ------------
+FK_Lotes_ImportacionesSIG_ImportId                                                                                                           0            0
+FK_Lotes_Manzanas_IdManzana                                                                                                                  0            0
+FK_CodigosFijos_ImportacionesSIG_ImportId                                                                                                    0            0
+FK_CodigosFijos_Lotes_IdLote                                                                                                                 0            0
+FK_Conexiones_CodigosFijos_FixedCodeId                                                                                                       0            0
+FK_Conexiones_Sectores_SectorId                                                                                                              0            0
+FK_Conexiones_Vias_RoadId                                                                                                                    0            0
+FK_ContratosServicio_Clientes_ClientId                                                                                                       0            0
+FK_ContratosServicio_Conexiones_ConnectionId                                                                                                 0            0
+FK_ContratosServicio_CuentasServicio_AccountId                                                                                               0            0
+FK_ContratosServicio_TarifaVersiones_TariffId                                                                                                0            0
+Problema                      Cantidad   
+----------------------------- -----------
+Codigo sin lote existente               0
+Lote sin manzana existente              0
+Conexion sin codigo existente           0
+Id          Layer                                                                            Aceptados   Rechazados  Hash                                                            
+----------- -------------------------------------------------------------------------------- ----------- ----------- ----------------------------------------------------------------
+          1 codes                                                                                   6271           0 6ADA54114A2508D64C8F6F2215140A00718CCC29D2C1CAF725B986DB1FE36F80
+          2 lots                                                                                   15280           1 DB5CD00A56198592A851E80645B1CCFA883009ABDDC9B2DFB005F71C19F51831
+          3 blocks                                                                                   863           0 0FD1DEECD38BD8107E3B0B40755426A5B455D7431502951BA3082DCB4712E14F
+          4 roads                                                                                    578           0 F6997ADF017FF9185A0E4B657D4D84D9591725C464A95EC1B2AA726C9BC585F0

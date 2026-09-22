@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><ProjectReference Include="../AquaControl.Application/AquaControl.Application.csproj"/><PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="10.0.0"/><PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.6"/></ItemGroup></Project>

@@ -1,0 +1,8 @@
+.tools/
+**/bin/
+**/obj/
+**/App_Data/
+.local/
+*.user
+*.bak
+TestResults/

@@ -1,0 +1,80 @@
+{
+  "result": "PASS",
+  "checks": [
+    {
+      "path": "/geo-summary",
+      "status": 401,
+      "seconds": 0.031
+    },
+    {
+      "path": "/auth/csrf",
+      "status": 200,
+      "seconds": 0.016
+    },
+    {
+      "path": "/auth/login",
+      "status": 200,
+      "seconds": 11.031
+    },
+    {
+      "path": "/geo-summary",
+      "status": 200,
+      "seconds": 1.875
+    },
+    {
+      "path": "/geo/codes?west=-61.00389667629377&south=-16.440711915494283&east=-60.928697731060566&north=-16.352993203335032",
+      "status": 200,
+      "seconds": 0.203
+    },
+    {
+      "path": "/geo/codes?west=0&south=0&east=1&north=1",
+      "status": 200,
+      "seconds": 0.015
+    },
+    {
+      "path": "/geo/lots?west=-61.00246112536535&south=-16.410361345168198&east=-60.927374900010776&north=-16.353252758556618",
+      "status": 200,
+      "seconds": 0.25
+    },
+    {
+      "path": "/geo/lots?west=0&south=0&east=1&north=1",
+      "status": 200,
+      "seconds": 0.0
+    },
+    {
+      "path": "/geo/blocks?west=-60.987837337470204&south=-16.40644583698132&east=-60.92737489798773&north=-16.358649826626593",
+      "status": 200,
+      "seconds": 0.062
+    },
+    {
+      "path": "/geo/blocks?west=0&south=0&east=1&north=1",
+      "status": 200,
+      "seconds": 0.0
+    },
+    {
+      "path": "/geo/roads?west=-61.0077213160026&south=-16.437002547731737&east=-60.91939886095809&north=-16.32145700608952",
+      "status": 200,
+      "seconds": 0.047
+    },
+    {
+      "path": "/geo/roads?west=0&south=0&east=1&north=1",
+      "status": 200,
+      "seconds": 0.031
+    },
+    {
+      "path": "/geo/codes?west=1&south=0&east=0&north=1",
+      "status": 400,
+      "seconds": 0.016
+    },
+    {
+      "path": "/geo/codes?west=-181&south=0&east=0&north=1",
+      "status": 400,
+      "seconds": 0.0
+    },
+    {
+      "path": "/geo/unknown?west=0&south=0&east=1&north=1",
+      "status": 400,
+      "seconds": 0.0
+    }
+  ]
+}
