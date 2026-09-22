@@ -1,1 +1,3 @@
 documento,numero_cuenta,codigo_conexion,tarifa,fecha_inicio,fecha_fin
+DEMO-0001,DEMO-AC-0001,DEMO-CNX-0001,Tarifa demostración residencial,2026-01-01,
+DEMO-0002,DEMO-AC-0002,DEMO-CNX-0002,Tarifa demostración residencial,2026-01-01,

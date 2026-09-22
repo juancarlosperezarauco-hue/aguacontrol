@@ -1,6 +1,6 @@
 # Carga de datos comerciales reales
 
-Esta carpeta contiene el formato de intercambio para cargar el padrón real en AquaControl. Los archivos se entregan sin registros de ejemplo para no confundir datos de demostración con información oficial.
+Esta carpeta contiene el formato de intercambio para cargar el padrón real en AquaControl. Incluye un padrón mínimo de demostración identificado con el prefijo `DEMO-`; reemplácelo por los archivos oficiales antes de una operación real.
 
 ## Orden de carga
 

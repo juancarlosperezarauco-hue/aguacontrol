@@ -1,1 +1,3 @@
 documento,nombre,telefono,email,direccion,activo
+DEMO-0001,Cliente Demostración Uno,+59170000001,cliente.uno@example.invalid,Av. Demostración 100,true
+DEMO-0002,Cliente Demostración Dos,+59170000002,cliente.dos@example.invalid,Calle Demostración 200,true
