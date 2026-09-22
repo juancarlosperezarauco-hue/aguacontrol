@@ -1,0 +1,19 @@
+# Preserve the original SIG files byte-for-byte. They are not source text.
+*.shp binary
+*.shx binary
+*.dbf binary
+*.sbn binary
+*.sbx binary
+*.png binary
+*.pdf binary
+
+# Keep source files consistent across Windows and CI hosts.
+*.cs text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+*.sql text eol=lf
+*.ps1 text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
