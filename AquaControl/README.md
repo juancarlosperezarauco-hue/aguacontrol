@@ -140,3 +140,12 @@ El script no borra tablas: añade registros ficticios identificables por ejecuci
 - Validación de capacidad/carga, antimalware de evidencias, política de retención, servidor HTTPS y cuenta SQL de mínimos privilegios antes de exposición pública.
 
 La clave de conexión de desarrollo permite únicamente el servidor local por Windows. Producción exige configurar certificados y conexión explícita; no reutilizar `TrustServerCertificate=true` fuera de un entorno local controlado.
+# Carga de datos reales
+
+Las capas SIG ya están importadas. Para incorporar el padrón comercial real, copie los CSV recibidos a una carpeta de trabajo con la estructura de [templates/carga-comercial](templates/carga-comercial/README.md) y valide los encabezados antes de importar:
+
+```powershell
+.\scripts\validar-carga-comercial.ps1 -Ruta C:\ruta\a\carga-comercial
+```
+
+La validación no modifica SQL Server. La importación definitiva se ejecutará sobre una copia respaldada una vez que se disponga de la fuente oficial.
