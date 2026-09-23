@@ -121,3 +121,21 @@ $env:AQUA_BOOTSTRAP_PASSWORD='DefinaUnaClaveLargaConLetrasYNumeros'
 
 Para conservar los datos de desarrollo, restaure primero el respaldo de `AquaControlDev` en SQL Server y use el nombre de servidor/instancia real en `ConnectionStrings__Aqua`. No use la ruta `np:\\.\pipe\sql\query` de otro equipo: es una tubería local de este computador.
 
+## Compartir en tu red local
+
+En el equipo que tiene SQL Server y ejecuta AquaControl:
+
+```powershell
+& .\AquaControl\scripts\run.ps1 -Host lan -Port 5080 -SandboxPayments
+ipconfig
+```
+
+Busca la dirección IPv4, por ejemplo `192.168.1.25`. Los demás equipos conectados a la misma red Wi-Fi o cableada abren `http://192.168.1.25:5080`.
+
+Si Windows bloquea el acceso, abre PowerShell como administrador una sola vez y ejecuta:
+
+```powershell
+New-NetFirewallRule -DisplayName 'AquaControl LAN 5080' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 5080 -Profile Private
+```
+
+Esta opción es para una red local privada. No expongas el puerto 5080 directamente a Internet.
