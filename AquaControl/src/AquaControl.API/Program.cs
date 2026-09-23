@@ -20,8 +20,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization();builder.Services.AddRateLimiter(o=>{o.RejectionStatusCode=429;o.AddPolicy("login",c=>RateLimitPartition.GetFixedWindowLimiter(c.Connection.RemoteIpAddress?.ToString()??"local",_=>new FixedWindowRateLimiterOptions{PermitLimit=10,Window=TimeSpan.FromMinutes(1),QueueLimit=0}));});
 builder.Services.ConfigureHttpJsonOptions(o=>o.SerializerOptions.PropertyNamingPolicy=JsonNamingPolicy.CamelCase);
 var app=builder.Build();
-if(args.Contains("--init")||args.Contains("--schema")||args.Contains("--import-sig")||args.Contains("--validate-sig")){
+if(args.Contains("--init")||args.Contains("--schema")||args.Contains("--import-sig")||args.Contains("--validate-sig")||args.Contains("--verify")){
  using var scope=app.Services.CreateScope();var db=scope.ServiceProvider.GetRequiredService<AquaDb>();
+ if(args.Contains("--verify")){if(!await db.Database.CanConnectAsync())throw new InvalidOperationException("No se puede conectar a SQL Server. Revise ConnectionStrings__Aqua.");var users=await db.Set<User>().CountAsync();Console.WriteLine($"Base AquaControl disponible. Usuarios: {users}.");return;}
  if(args.Contains("--schema")){Console.WriteLine(db.Database.GenerateCreateScript());return;}
  if(args.Contains("--init")){if(!connection.Contains("AquaControl",StringComparison.OrdinalIgnoreCase))throw new InvalidOperationException("Inicialización requiere una base AquaControl nueva, nunca VisorDatosSIG.");await db.Database.EnsureCreatedAsync();await scope.ServiceProvider.GetRequiredService<SecurityService>().Seed(Environment.GetEnvironmentVariable("AQUA_BOOTSTRAP_PASSWORD"));Console.WriteLine("AquaControl inicializado.");}
  if(args.Contains("--import-sig")){var folder=Environment.GetEnvironmentVariable("AQUA_SIG_PATH")??throw new InvalidOperationException("Defina AQUA_SIG_PATH.");await scope.ServiceProvider.GetRequiredService<GeoService>().Import(folder);}

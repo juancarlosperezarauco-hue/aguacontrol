@@ -103,4 +103,21 @@ El script de integración crea registros ficticios identificados como `FICTICIO`
 - [README.md](README.md): documentación de módulos y reglas de negocio.
 - [AquaControl_Validacion_SIG.md](../output/analisis/AquaControl_Validacion_SIG.md): resultado de la revisión cartográfica.
 - [00_Backup_Original.sql](database/00_Backup_Original.sql): respaldo lógico de la instalación original inspeccionada.
+# Diagnóstico en otro equipo
+
+Antes de iniciar AquaControl, compruebe que SQL Server y la base configurada están disponibles:
+
+```powershell
+$env:ConnectionStrings__Aqua='Server=localhost\SQLEXPRESS;Database=AquaControlDev;Integrated Security=true;Encrypt=false;TrustServerCertificate=true'
+& .\AquaControl\scripts\diagnosticar.ps1
+```
+
+Si indica que la base no existe, cree una base nueva con:
+
+```powershell
+$env:AQUA_BOOTSTRAP_PASSWORD='DefinaUnaClaveLargaConLetrasYNumeros'
+& .\AquaControl\scripts\setup.ps1 -Initialize
+```
+
+Para conservar los datos de desarrollo, restaure primero el respaldo de `AquaControlDev` en SQL Server y use el nombre de servidor/instancia real en `ConnectionStrings__Aqua`. No use la ruta `np:\\.\pipe\sql\query` de otro equipo: es una tubería local de este computador.
 
