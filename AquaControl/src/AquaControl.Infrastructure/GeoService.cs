@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using static AquaControl.Domain.Workflow;
 namespace AquaControl.Infrastructure;
+public sealed record GeoProgress(string Layer,int Processed,int Accepted,int Rejected,string Stage);
 public partial class GeoService(AquaDb db){
  static readonly GeometryFactory Factory=new(new PrecisionModel(),4326);
  static readonly Dictionary<string,string> Files=new(){["codes"]="Exp_CodigoFijo_4326",["lots"]="Exp_MapaBase_LOTES_4326",["blocks"]="Exp_MapaBase_MZA_4326",["roads"]="Exp_MapaBase_VIAS_4326"};
@@ -25,20 +26,29 @@ public partial class GeoService(AquaDb db){
   var rings=Enumerable.Range(0,parts).Select(i=>Factory.CreateLinearRing(coords[starts[i]..starts[i+1]])).ToArray();var polygons=rings.Select(x=>Factory.CreatePolygon(x)).ToArray();var depth=new int[parts];for(int i=0;i<parts;i++)for(int j=0;j<parts;j++)if(i!=j&&polygons[j].Area>polygons[i].Area&&polygons[j].Covers(polygons[i].InteriorPoint))depth[i]++;
   var result=new List<Polygon>();for(int i=0;i<parts;i++)if(depth[i]%2==0){var holes=Enumerable.Range(0,parts).Where(j=>depth[j]==depth[i]+1&&polygons[i].Covers(polygons[j].InteriorPoint)).Select(j=>rings[j]).ToArray();result.Add(Factory.CreatePolygon(rings[i],holes));}return Factory.CreateMultiPolygon(result.ToArray());
  }
- public async Task Import(string folder){
+ public async Task<object> Preview(string folder){
+  var result=new List<object>();
+  foreach(var (layer,file) in Files){
+   var stem=Path.Combine(folder,file);var sample=Read(stem).Take(5).Select(x=>new{attributes=x.Fields,geometry=Geometry(x.Shape).GeometryType}).ToList();
+   var records=Read(stem).Count();result.Add(new{layer,file,records,fields=sample.SelectMany(x=>x.attributes.Keys).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x=>x),sample});
+  }
+  return new{layers=result,srid=4326,source="WGS84"};
+ }
+ public async Task Import(string folder,Action<GeoProgress>? progress=null,CancellationToken cancellationToken=default){
   db.Database.SetCommandTimeout(300);
   foreach(var (layer,file) in Files){var stem=Path.Combine(folder,file);using var sha=IncrementalHash.CreateHash(HashAlgorithmName.SHA256);foreach(var ext in new[]{".shp",".shx",".dbf",".prj"})sha.AppendData(File.ReadAllBytes(stem+ext));var hash=Convert.ToHexString(sha.GetHashAndReset());if(await db.Set<GeoImport>().AnyAsync(x=>x.Layer==layer&&x.Hash==hash)){Console.WriteLine(layer+": ya importado");continue;}Require(!await db.Set<GeoImport>().AnyAsync(x=>x.Layer==layer),"La capa ya tiene otra versión: reconciliar antes de reemplazar.");
-   using var tx=await db.Database.BeginTransactionAsync();var import=new GeoImport{Layer=layer,Hash=hash};db.Add(import);await db.SaveChangesAsync();int ordinal=0,accepted=0,rejected=0;
-   foreach(var (f,shape) in Read(stem)){ordinal++;var json=JsonSerializer.Serialize(f);Geometry g;try{g=Geometry(shape);Require(!g.IsEmpty&&g.IsValid,"Geometría vacía o inválida; no se reparó automáticamente.");Require(g.Coordinates.All(c=>double.IsFinite(c.X)&&double.IsFinite(c.Y)&&Math.Abs(c.X)<=180&&Math.Abs(c.Y)<=90),"Coordenadas fuera de rango.");}catch(Exception ex) when(ex is not OutOfMemoryException){db.Add(new GeoIssue{ImportId=import.Id,Ordinal=ordinal,Reason=ex.Message[..Math.Min(900,ex.Message.Length)],OriginalJson=json});rejected++;continue;}
+   progress?.Invoke(new(layer,0,0,0,"PREPARANDO"));using var tx=await db.Database.BeginTransactionAsync(cancellationToken);var import=new GeoImport{Layer=layer,Hash=hash};db.Add(import);await db.SaveChangesAsync(cancellationToken);int ordinal=0,accepted=0,rejected=0;
+   foreach(var (f,shape) in Read(stem)){cancellationToken.ThrowIfCancellationRequested();ordinal++;var json=JsonSerializer.Serialize(f);Geometry g;try{g=Geometry(shape);Require(!g.IsEmpty&&g.IsValid,"Geometría vacía o inválida; no se reparó automáticamente.");Require(g.Coordinates.All(c=>double.IsFinite(c.X)&&double.IsFinite(c.Y)&&Math.Abs(c.X)<=180&&Math.Abs(c.Y)<=90),"Coordenadas fuera de rango.");}catch(Exception ex) when(ex is not OutOfMemoryException){db.Add(new GeoIssue{ImportId=import.Id,Ordinal=ordinal,Reason=ex.Message[..Math.Min(900,ex.Message.Length)],OriginalJson=json});rejected++;continue;}
     string? S(string key)=>f.GetValueOrDefault(key);int? I(string key)=>int.TryParse(S(key),out var v)?v:null;
     if(layer=="codes"){db.Add(new FixedCode{ImportId=import.Id,Ordinal=ordinal,CodF_SQL=I("CodF_SQL"),CodF_SIG=S("CodF_SIG"),CodFijo=I("CodFijo"),Nombre=S("Nombre"),Geom=g,Longitud=g.Coordinate.X,Latitud=g.Coordinate.Y,OriginalJson=json});if(double.TryParse(S("Latid"),CultureInfo.InvariantCulture,out var lat)&&double.TryParse(S("Longi"),CultureInfo.InvariantCulture,out var lon)&&(Math.Abs(lat-g.Coordinate.Y)>0.00001||Math.Abs(lon-g.Coordinate.X)>0.00001))db.Add(new GeoIssue{ImportId=import.Id,Ordinal=ordinal,Reason="Atributos Longi/Latid difieren del SHP. Consulta usa geometría; atributos preservados.",OriginalJson=json});}
     else if(layer=="lots")db.Add(new Lot{ImportId=import.Id,Ordinal=ordinal,IdOrigen=I("Id"),NroLote=S("NroLote"),Geom=g,OriginalJson=json});
     else if(layer=="blocks")db.Add(new Block{ImportId=import.Id,Ordinal=ordinal,IdOrigen=I("Id"),UV_MZA=S("UV_MZA"),UV=S("UV"),MZA=S("MZA"),Geom=g,OriginalJson=json});
     else db.Add(new Road{ImportId=import.Id,Ordinal=ordinal,OBJECTID=I("OBJECTID"),Nombre=S("Nombre")??S("name"),TipoVia=S("type"),OSMID=S("OSMID")??S("osm_id"),Geom=g,OriginalJson=json});accepted++;
-    if(ordinal%300==0){await db.SaveChangesAsync();db.ChangeTracker.Clear();Console.WriteLine($"{layer}: {ordinal}");}
+    if(ordinal%300==0){await db.SaveChangesAsync(cancellationToken);db.ChangeTracker.Clear();progress?.Invoke(new(layer,ordinal,accepted,rejected,"IMPORTANDO"));Console.WriteLine($"{layer}: {ordinal}");}
    }
-   await db.SaveChangesAsync();var tracked=await db.Set<GeoImport>().SingleAsync(x=>x.Id==import.Id);tracked.Count=accepted;tracked.Rejected=rejected;await db.SaveChangesAsync();await tx.CommitAsync();db.ChangeTracker.Clear();Console.WriteLine($"{layer}: {accepted} aceptados, {rejected} rechazados.");
+   cancellationToken.ThrowIfCancellationRequested();await db.SaveChangesAsync(cancellationToken);var tracked=await db.Set<GeoImport>().SingleAsync(x=>x.Id==import.Id,cancellationToken);tracked.Count=accepted;tracked.Rejected=rejected;await db.SaveChangesAsync(cancellationToken);await tx.CommitAsync(cancellationToken);db.ChangeTracker.Clear();progress?.Invoke(new(layer,ordinal,accepted,rejected,"COMPLETADA"));Console.WriteLine($"{layer}: {accepted} aceptados, {rejected} rechazados.");
   }
+  progress?.Invoke(new("relaciones",0,0,0,"ASOCIANDO"));
   var blocks=await db.Set<Block>().AsNoTracking().ToListAsync();
   var blockTree=new NetTopologySuite.Index.Strtree.STRtree<Block>();
   foreach(var block in blocks)if(block.Geom!=null)blockTree.Insert(block.Geom.EnvelopeInternal,block);
@@ -46,15 +56,15 @@ public partial class GeoService(AquaDb db){
   foreach(var lot in lots.Where(x=>x.IdManzana==null&&x.Geom!=null)){
    var point=lot.Geom!.InteriorPoint;var matches=blockTree.Query(point.EnvelopeInternal).Where(x=>x.Geom!.Intersects(point)).Take(2).ToList();if(matches.Count==1)lot.IdManzana=matches[0].Id;
   }
-  await db.SaveChangesAsync();db.ChangeTracker.Clear();
+  cancellationToken.ThrowIfCancellationRequested();await db.SaveChangesAsync(cancellationToken);db.ChangeTracker.Clear();
   var lotTree=new NetTopologySuite.Index.Strtree.STRtree<Lot>();foreach(var lot in lots)if(lot.Geom!=null)lotTree.Insert(lot.Geom.EnvelopeInternal,lot);
   var codes=await db.Set<FixedCode>().Where(x=>x.IdLote==null).ToListAsync();foreach(var code in codes.Where(x=>x.Geom!=null)){var matches=lotTree.Query(code.Geom!.EnvelopeInternal).Where(x=>x.Geom!.Intersects(code.Geom)).Take(2).ToList();if(matches.Count==1)code.IdLote=matches[0].Id;}
-  await db.SaveChangesAsync();db.ChangeTracker.Clear();
+  cancellationToken.ThrowIfCancellationRequested();await db.SaveChangesAsync(cancellationToken);db.ChangeTracker.Clear();
   // Identifiers below come exclusively from this fixed allowlist, never request data.
 #pragma warning disable EF1002
   foreach(var table in new[]{"CodigosFijos","Lotes","Manzanas","Vias"})await db.Database.ExecuteSqlRawAsync($"IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name='SIX_{table}_Geom' AND object_id=OBJECT_ID('dbo.{table}')) CREATE SPATIAL INDEX SIX_{table}_Geom ON dbo.{table}(Geom) USING GEOMETRY_AUTO_GRID WITH(BOUNDING_BOX=(-61.1,-16.5,-60.8,-16.2));");
 #pragma warning restore EF1002
-  Console.WriteLine("Asociaciones e indices espaciales completados.");
+  progress?.Invoke(new("relaciones",0,0,0,"COMPLETADA"));Console.WriteLine("Asociaciones e indices espaciales completados.");
  }
  static object Geo(Geometry g){static double[] XY(Coordinate c)=>[c.X,c.Y];static object Rings(Polygon p)=>new[]{p.ExteriorRing.Coordinates.Select(XY).ToArray()}.Concat(Enumerable.Range(0,p.NumInteriorRings).Select(i=>p.GetInteriorRingN(i).Coordinates.Select(XY).ToArray())).ToArray();return g switch { Point p=>new{type="Point",coordinates=(object)XY(p.Coordinate)},LineString l=>new{type="LineString",coordinates=(object)l.Coordinates.Select(XY).ToArray()},Polygon p=>new{type="Polygon",coordinates=Rings(p)},MultiPolygon m=>new{type="MultiPolygon",coordinates=(object)Enumerable.Range(0,m.NumGeometries).Select(i=>Rings((Polygon)m.GetGeometryN(i))).ToArray()},MultiLineString m=>new{type="MultiLineString",coordinates=(object)Enumerable.Range(0,m.NumGeometries).Select(i=>m.GetGeometryN(i).Coordinates.Select(XY).ToArray()).ToArray()},_=>throw new BusinessException("Geometría de salida no soportada.")};}
  public async Task<object> Layer(Actor a,string layer,double west,double south,double east,double north){a.Require("geo.read");Require(west>=-180&&east<=180&&south>=-90&&north<=90&&west<east&&south<north,"Extensión inválida.");var box=Factory.ToGeometry(new Envelope(west,east,south,north));var features=new List<object>();const int limit=1000;

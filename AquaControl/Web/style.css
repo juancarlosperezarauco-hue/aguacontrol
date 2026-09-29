@@ -7,3 +7,4 @@ aside .brand{white-space:nowrap;font-size:22px}
 @media(max-width:1100px){.map-layout{grid-template-columns:1fr}.map-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px}.map-controls h3,.map-controls p,.map-controls small{grid-column:1/-1;margin:0}.map-controls label{margin:0}.map-controls #map-fit{margin:0;justify-self:start}#map{height:540px}}
 
 .sim-qr{display:grid;justify-items:center;gap:12px;padding:12px}.sim-qr img{max-width:100%;width:260px;image-rendering:pixelated}.sim-qr strong{font-size:28px}.demo-card{display:grid;gap:30px;background:linear-gradient(130deg,#103f46,#087f78);color:white;border-radius:16px;padding:28px;margin-bottom:24px}.demo-card strong{font-size:24px;letter-spacing:3px}.demo-card small{color:#b8d9d4}
+#sig-legend{margin-top:1rem;border-top:1px solid #d9e5e3;padding-top:.7rem}.map-legend p{margin:.35rem 0;font-size:.85rem}.map-legend small{display:block;color:#607471;line-height:1.35}

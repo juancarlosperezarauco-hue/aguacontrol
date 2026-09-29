@@ -78,6 +78,11 @@ public static class Api {
   api.MapGet("/geo/{layer}",async(string layer,double west,double south,double east,double north,HttpContext c,AquaService s,GeoService geo)=>await geo.Layer(await Actor(c,s),layer,west,south,east,north));
   api.MapGet("/geo-summary",async(HttpContext c,AquaService s,GeoService geo)=>await geo.Summary(await Actor(c,s)));
   api.MapGet("/geo-imports",async(HttpContext c,AquaService s,AquaDb db)=>{(await Actor(c,s)).Require("geo.import");return new{imports=await db.Set<GeoImport>().ToListAsync(),issues=await db.Set<GeoIssue>().OrderByDescending(x=>x.Id).Take(100).Select(x=>new{x.Id,x.ImportId,x.Ordinal,x.Reason}).ToListAsync()};});
+  string GeoSource(IWebHostEnvironment env){var folder=Path.GetFullPath(Path.Combine(env.ContentRootPath,"../../../DatosSIG_Reproj"));Require(Directory.Exists(folder),"No se encontró DatosSIG_Reproj en el servidor.");return folder;}
+  api.MapGet("/geo-import/preview",async(HttpContext c,AquaService s,GeoService geo,IWebHostEnvironment env)=>{(await Actor(c,s)).Require("geo.import");return await geo.Preview(GeoSource(env));});
+  api.MapGet("/geo-import/job",async(HttpContext c,AquaService s,GeoImportCoordinator coordinator)=>{(await Actor(c,s)).Require("geo.import");return coordinator.Current() is { } job?Results.Ok(job):Results.NoContent();});
+  api.MapPost("/geo-import/job",async(HttpContext c,AquaService s,GeoImportCoordinator coordinator,IWebHostEnvironment env)=>{var a=await Actor(c,s);a.Require("geo.import");return coordinator.Start(GeoSource(env),a.Id);});
+  api.MapPost("/geo-import/job/{id:guid}/cancel",async(Guid id,HttpContext c,AquaService s,GeoImportCoordinator coordinator)=>{(await Actor(c,s)).Require("geo.import");return coordinator.Cancel(id);});
  }
 }
 record VersionRequest(string Version);record InstallRequest(int ConnectionId,int MeterId,decimal Initial,decimal? Final);record AdjustRequest(decimal Amount,string Reason);record GenerateInvoicesRequest(string Period,DateTime DueAt);record ActivityRequest(bool Done,string Result,string Version);record MaterialRequest(int MaterialId,decimal Quantity);record NoticeRequest(int ContractId);record UserRequest(string Login,string Name,string Password,int RoleId,int? ClientId);record RoleRequest(int RoleId,bool Active);record ResetRequest(string Password);record ClientLinkRequest(int ClientId);
