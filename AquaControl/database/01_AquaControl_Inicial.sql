@@ -22,19 +22,6 @@ CREATE TABLE [CuentasServicio] (
 GO
 
 
-CREATE TABLE [ImportacionesSIG] (
-    [Id] int NOT NULL IDENTITY,
-    [Layer] nvarchar(80) NOT NULL,
-    [Hash] nvarchar(64) NOT NULL,
-    [Count] int NOT NULL,
-    [Rejected] int NOT NULL,
-    [CreatedAt] datetime2 NOT NULL,
-    [Version] rowversion NOT NULL,
-    CONSTRAINT [PK_ImportacionesSIG] PRIMARY KEY ([Id])
-);
-GO
-
-
 CREATE TABLE [Materiales] (
     [Id] int NOT NULL IDENTITY,
     [Code] nvarchar(40) NOT NULL,
@@ -177,53 +164,6 @@ CREATE TABLE [Usuarios] (
 GO
 
 
-CREATE TABLE [IncidenciasSIG] (
-    [Id] int NOT NULL IDENTITY,
-    [ImportId] int NOT NULL,
-    [Ordinal] int NOT NULL,
-    [Reason] nvarchar(1000) NOT NULL,
-    [OriginalJson] nvarchar(max) NOT NULL,
-    [Version] rowversion NOT NULL,
-    CONSTRAINT [PK_IncidenciasSIG] PRIMARY KEY ([Id]),
-    CONSTRAINT [FK_IncidenciasSIG_ImportacionesSIG_ImportId] FOREIGN KEY ([ImportId]) REFERENCES [ImportacionesSIG] ([Id]) ON DELETE NO ACTION
-);
-GO
-
-
-CREATE TABLE [Manzanas] (
-    [IdManzana] int NOT NULL IDENTITY,
-    [IdOrigen] int NULL,
-    [UV_MZA] nvarchar(2000) NULL,
-    [UV] nvarchar(2000) NULL,
-    [MZA] nvarchar(2000) NULL,
-    [Geom] geometry NULL,
-    [ImportId] int NOT NULL,
-    [Ordinal] int NOT NULL,
-    [OriginalJson] nvarchar(max) NOT NULL,
-    [Version] rowversion NOT NULL,
-    CONSTRAINT [PK_Manzanas] PRIMARY KEY ([IdManzana]),
-    CONSTRAINT [FK_Manzanas_ImportacionesSIG_ImportId] FOREIGN KEY ([ImportId]) REFERENCES [ImportacionesSIG] ([Id]) ON DELETE NO ACTION
-);
-GO
-
-
-CREATE TABLE [Vias] (
-    [IdVia] int NOT NULL IDENTITY,
-    [OBJECTID] int NULL,
-    [Nombre] nvarchar(2000) NULL,
-    [TipoVia] nvarchar(2000) NULL,
-    [OSMID] nvarchar(2000) NULL,
-    [Geom] geometry NULL,
-    [ImportId] int NOT NULL,
-    [Ordinal] int NOT NULL,
-    [OriginalJson] nvarchar(max) NOT NULL,
-    [Version] rowversion NOT NULL,
-    CONSTRAINT [PK_Vias] PRIMARY KEY ([IdVia]),
-    CONSTRAINT [FK_Vias_ImportacionesSIG_ImportId] FOREIGN KEY ([ImportId]) REFERENCES [ImportacionesSIG] ([Id]) ON DELETE NO ACTION
-);
-GO
-
-
 CREATE TABLE [RolesPermisos] (
     [Id] int NOT NULL IDENTITY,
     [RoleId] int NOT NULL,
@@ -273,6 +213,29 @@ CREATE TABLE [Bitacora] (
     [Version] rowversion NOT NULL,
     CONSTRAINT [PK_Bitacora] PRIMARY KEY ([Id]),
     CONSTRAINT [FK_Bitacora_Usuarios_UserId] FOREIGN KEY ([UserId]) REFERENCES [Usuarios] ([IdUsuario]) ON DELETE NO ACTION
+);
+GO
+
+
+CREATE TABLE [ImportacionesSIG] (
+    [Id] int NOT NULL IDENTITY,
+    [Layer] nvarchar(80) NOT NULL,
+    [Hash] nvarchar(64) NOT NULL,
+    [SourceFile] nvarchar(260) NOT NULL,
+    [Mode] nvarchar(12) NOT NULL,
+    [Status] nvarchar(20) NOT NULL,
+    [UserId] int NULL,
+    [Count] int NOT NULL,
+    [Rejected] int NOT NULL,
+    [Omitted] int NOT NULL,
+    [Warnings] int NOT NULL,
+    [StartedAt] datetime2 NOT NULL,
+    [CompletedAt] datetime2 NULL,
+    [DurationMilliseconds] bigint NULL,
+    [CreatedAt] datetime2 NOT NULL,
+    [Version] rowversion NOT NULL,
+    CONSTRAINT [PK_ImportacionesSIG] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_ImportacionesSIG_Usuarios_UserId] FOREIGN KEY ([UserId]) REFERENCES [Usuarios] ([IdUsuario]) ON DELETE NO ACTION
 );
 GO
 
@@ -350,19 +313,50 @@ CREATE TABLE [UsuariosRoles] (
 GO
 
 
-CREATE TABLE [Lotes] (
-    [IdLote] int NOT NULL IDENTITY,
+CREATE TABLE [IncidenciasSIG] (
+    [Id] int NOT NULL IDENTITY,
+    [ImportId] int NOT NULL,
+    [Ordinal] int NOT NULL,
+    [Severity] nvarchar(12) NOT NULL,
+    [Reason] nvarchar(1000) NOT NULL,
+    [OriginalJson] nvarchar(max) NOT NULL,
+    [Version] rowversion NOT NULL,
+    CONSTRAINT [PK_IncidenciasSIG] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_IncidenciasSIG_ImportacionesSIG_ImportId] FOREIGN KEY ([ImportId]) REFERENCES [ImportacionesSIG] ([Id]) ON DELETE NO ACTION
+);
+GO
+
+
+CREATE TABLE [Manzanas] (
+    [IdManzana] int NOT NULL IDENTITY,
     [IdOrigen] int NULL,
-    [NroLote] nvarchar(2000) NULL,
-    [IdManzana] int NULL,
+    [UV_MZA] nvarchar(2000) NULL,
+    [UV] nvarchar(2000) NULL,
+    [MZA] nvarchar(2000) NULL,
     [Geom] geometry NULL,
     [ImportId] int NOT NULL,
     [Ordinal] int NOT NULL,
     [OriginalJson] nvarchar(max) NOT NULL,
     [Version] rowversion NOT NULL,
-    CONSTRAINT [PK_Lotes] PRIMARY KEY ([IdLote]),
-    CONSTRAINT [FK_Lotes_ImportacionesSIG_ImportId] FOREIGN KEY ([ImportId]) REFERENCES [ImportacionesSIG] ([Id]) ON DELETE NO ACTION,
-    CONSTRAINT [FK_Lotes_Manzanas_IdManzana] FOREIGN KEY ([IdManzana]) REFERENCES [Manzanas] ([IdManzana]) ON DELETE NO ACTION
+    CONSTRAINT [PK_Manzanas] PRIMARY KEY ([IdManzana]),
+    CONSTRAINT [FK_Manzanas_ImportacionesSIG_ImportId] FOREIGN KEY ([ImportId]) REFERENCES [ImportacionesSIG] ([Id]) ON DELETE NO ACTION
+);
+GO
+
+
+CREATE TABLE [Vias] (
+    [IdVia] int NOT NULL IDENTITY,
+    [OBJECTID] int NULL,
+    [Nombre] nvarchar(2000) NULL,
+    [TipoVia] nvarchar(2000) NULL,
+    [OSMID] nvarchar(2000) NULL,
+    [Geom] geometry NULL,
+    [ImportId] int NOT NULL,
+    [Ordinal] int NOT NULL,
+    [OriginalJson] nvarchar(max) NOT NULL,
+    [Version] rowversion NOT NULL,
+    CONSTRAINT [PK_Vias] PRIMARY KEY ([IdVia]),
+    CONSTRAINT [FK_Vias_ImportacionesSIG_ImportId] FOREIGN KEY ([ImportId]) REFERENCES [ImportacionesSIG] ([Id]) ON DELETE NO ACTION
 );
 GO
 
@@ -396,6 +390,38 @@ CREATE TABLE [Pagos] (
 GO
 
 
+CREATE TABLE [Lotes] (
+    [IdLote] int NOT NULL IDENTITY,
+    [IdOrigen] int NULL,
+    [NroLote] nvarchar(2000) NULL,
+    [IdManzana] int NULL,
+    [Geom] geometry NULL,
+    [ImportId] int NOT NULL,
+    [Ordinal] int NOT NULL,
+    [OriginalJson] nvarchar(max) NOT NULL,
+    [Version] rowversion NOT NULL,
+    CONSTRAINT [PK_Lotes] PRIMARY KEY ([IdLote]),
+    CONSTRAINT [FK_Lotes_ImportacionesSIG_ImportId] FOREIGN KEY ([ImportId]) REFERENCES [ImportacionesSIG] ([Id]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_Lotes_Manzanas_IdManzana] FOREIGN KEY ([IdManzana]) REFERENCES [Manzanas] ([IdManzana]) ON DELETE NO ACTION
+);
+GO
+
+
+CREATE TABLE [ReversionesPago] (
+    [Id] int NOT NULL IDENTITY,
+    [PaymentId] int NOT NULL,
+    [Reference] nvarchar(120) NOT NULL,
+    [Reason] nvarchar(500) NOT NULL,
+    [UserId] int NOT NULL,
+    [CreatedAt] datetime2 NOT NULL,
+    [Version] rowversion NOT NULL,
+    CONSTRAINT [PK_ReversionesPago] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_ReversionesPago_Pagos_PaymentId] FOREIGN KEY ([PaymentId]) REFERENCES [Pagos] ([Id]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_ReversionesPago_Usuarios_UserId] FOREIGN KEY ([UserId]) REFERENCES [Usuarios] ([IdUsuario]) ON DELETE NO ACTION
+);
+GO
+
+
 CREATE TABLE [CodigosFijos] (
     [IdCodigo] int NOT NULL IDENTITY,
     [CodF_SQL] int NULL,
@@ -415,21 +441,6 @@ CREATE TABLE [CodigosFijos] (
     CONSTRAINT [PK_CodigosFijos] PRIMARY KEY ([IdCodigo]),
     CONSTRAINT [FK_CodigosFijos_ImportacionesSIG_ImportId] FOREIGN KEY ([ImportId]) REFERENCES [ImportacionesSIG] ([Id]) ON DELETE NO ACTION,
     CONSTRAINT [FK_CodigosFijos_Lotes_IdLote] FOREIGN KEY ([IdLote]) REFERENCES [Lotes] ([IdLote]) ON DELETE NO ACTION
-);
-GO
-
-
-CREATE TABLE [ReversionesPago] (
-    [Id] int NOT NULL IDENTITY,
-    [PaymentId] int NOT NULL,
-    [Reference] nvarchar(120) NOT NULL,
-    [Reason] nvarchar(500) NOT NULL,
-    [UserId] int NOT NULL,
-    [CreatedAt] datetime2 NOT NULL,
-    [Version] rowversion NOT NULL,
-    CONSTRAINT [PK_ReversionesPago] PRIMARY KEY ([Id]),
-    CONSTRAINT [FK_ReversionesPago_Pagos_PaymentId] FOREIGN KEY ([PaymentId]) REFERENCES [Pagos] ([Id]) ON DELETE NO ACTION,
-    CONSTRAINT [FK_ReversionesPago_Usuarios_UserId] FOREIGN KEY ([UserId]) REFERENCES [Usuarios] ([IdUsuario]) ON DELETE NO ACTION
 );
 GO
 
@@ -796,7 +807,7 @@ CREATE UNIQUE INDEX [IX_Conexiones_Code] ON [Conexiones] ([Code]);
 GO
 
 
-CREATE INDEX [IX_Conexiones_FixedCodeId] ON [Conexiones] ([FixedCodeId]);
+CREATE UNIQUE INDEX [IX_Conexiones_FixedCodeId] ON [Conexiones] ([FixedCodeId]) WHERE [FixedCodeId] IS NOT NULL;
 GO
 
 
@@ -877,6 +888,10 @@ GO
 
 
 CREATE UNIQUE INDEX [IX_ImportacionesSIG_Layer_Hash] ON [ImportacionesSIG] ([Layer], [Hash]);
+GO
+
+
+CREATE INDEX [IX_ImportacionesSIG_UserId] ON [ImportacionesSIG] ([UserId]);
 GO
 
 

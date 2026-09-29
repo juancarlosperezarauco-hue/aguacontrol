@@ -74,11 +74,24 @@ El sistema no puede hacer atómica una acción humana sobre una válvula con un 
 
 ## Importar SIG
 
+Antes de usar el migrador actualizado sobre una base AquaControl ya creada, ejecute una sola vez el script incremental. Solo agrega campos de procedencia y bitácora; no borra datos:
+
+```powershell
+sqlcmd -S 'SU_SERVIDOR' -E -d AquaControlDev -b -i .\AquaControl\database\05_Completar_Bitacora_Migrador_SIG.sql
+```
+
+En **Migrador SIG**, puede usar los datos SIG preparados del servidor con **Previsualizar capas**, o seleccionar desde su equipo los archivos `.shp`, `.shx`, `.dbf`, `.prj` y `.cpg` de las cuatro capas. La selección se copia a un área temporal, se valida y se elimina cuando termina la importación. La consola verifica los componentes, UTF-8 y EPSG:4326; presenta la extensión, mapeo origen→destino y 20 registros de cada capa sin modificar SQL Server. Después elija:
+
+- **Anexar:** conserva las geometrías existentes y omite claves naturales ya presentes.
+- **Reemplazar:** sustituye las cuatro capas en una única transacción. Se bloquea si hay conexiones comerciales que dependan de códigos fijos o vías; primero debe conciliarlas.
+
+La bitácora conserva fuente, usuario, modo, fecha, duración, aceptados, omitidos, rechazados y advertencias. Al terminar, permite descargar el resumen CSV o TXT.
+
 ```powershell
 & .\AquaControl\scripts\import-sig.ps1
 ```
 
-Valida componentes, PRJ, UTF-8, correspondencia SHX/DBF y geometrías. Reintentar el mismo archivo no duplica; una versión distinta queda bloqueada hasta conciliación. No repara geometrías automáticamente. Preserva los atributos DBF en OriginalJson, la geometría original válida en SQL y todos los archivos fuente sin modificar. Las coordenadas de consulta proceden de la geometría.
+Valida componentes, PRJ, UTF-8, correspondencia SHX/DBF y geometrías. Reintentar el mismo archivo no duplica; al anexar una versión distinta, las claves naturales existentes se omiten y quedan contabilizadas. No repara geometrías automáticamente. Preserva los atributos DBF en OriginalJson, la geometría original válida en SQL y todos los archivos fuente sin modificar. Las coordenadas de consulta proceden de la geometría.
 
 La carga conserva cada capa en una transacción; una capa completada no se revierte si falla la siguiente. La asociación posterior se puede reintentar. Coincidencias espaciales múltiples no generan vínculos automáticos ni reemplazan los vínculos existentes. La regla inicial lote/manzana utiliza punto interior y requiere revisión catastral para casos de solape o límites complejos.
 
