@@ -58,13 +58,13 @@ async function mapPage(){
   return `<label><input type="checkbox" data-layer="${key}" ${['blocks','roads'].includes(key)?'checked':''}>${label} · ${q?.count??0}</label>`;
  }).join('');
  const unlinked=quality.filter(x=>x.unlinked>0).map(x=>`${names[x.layer]}: ${x.unlinked} sin vínculo`).join(' · ');
- $('#content').innerHTML=intro('Territorio y servicio','Capas originales SIG y operación sobre el mapa')+`<div class="card map-layout"><div class="map-controls"><h3>Capas del territorio</h3>${layerLabels}<p class="tagline">Lotes y códigos fijos se muestran desde el zoom 16. Acerque el mapa para ver el detalle.</p><button id="map-fit" class="btn">Ver territorio</button><h3>Operación</h3><small>● ${lookup.connections.length} conexiones<br>● ${orders.length} trabajos<br>● ${points.length} puntos de pago</small>${unlinked?`<p class="notice warning">${esc(unlinked)}. Requieren revisión catastral.</p>`:''}<p id="map-status" role="status" class="tagline"></p></div><div id="map"></div></div>`;
+ $('#content').innerHTML=intro('Territorio y servicio','Capas originales SIG y operación sobre el mapa')+`<div class="card map-layout"><div class="map-controls"><h3>Buscar en territorio</h3><label>Texto<input id="geo-search-text" minlength="2" placeholder="Código, lote, manzana o vía"></label><div class="map-search-layers">${Object.entries(names).map(([key,label])=>`<label><input type="checkbox" data-search-layer="${key}" checked>${label}</label>`).join('')}</div><button id="geo-search" class="btn secondary">Buscar</button><div id="geo-results" aria-live="polite"></div><h3>Referencias del entorno</h3><button id="poi-search" class="btn secondary">Lugares cercanos · OpenTripMap</button><p id="poi-status" class="tagline">Busca hasta 50 lugares de interés a 1 km del centro del mapa.</p><h3>Capas del territorio</h3>${layerLabels}<p class="tagline">Lotes y códigos fijos se muestran desde el zoom 16. Acerque el mapa para ver el detalle.</p><button id="map-fit" class="btn">Ver territorio</button><section id="sig-legend" class="map-legend" aria-live="polite"></section><h3>Operación</h3><small>● ${lookup.connections.length} conexiones<br>● ${orders.length} trabajos<br>● ${points.length} puntos de pago</small>${unlinked?`<p class="notice warning">${esc(unlinked)}. Requieren revisión catastral.</p>`:''}<p id="map-coordinates" class="tagline">Coordenadas: —</p><p id="map-status" role="status" class="tagline"></p><section id="map-detail" class="map-detail" aria-live="polite">Seleccione una entidad para ver sus atributos.</section></div><div id="map"></div></div>`;
  if(!window.L){$('#map').innerHTML='<div class="error">No se encontró Leaflet. Ejecute scripts/setup.ps1 para instalar los recursos.</div>';return;}
  const localMap=L.map('map',{maxBounds:[[-85,-180],[85,180]],minZoom:3}).setView([-16.382,-60.965],14);
  map=localMap;
  localMap.attributionControl.addAttribution('Cartografía SIG suministrada · WGS84');
  L.control.scale({imperial:false}).addTo(localMap);
- const layers={},colors={blocks:'#809f9d',lots:'#baa764',roads:'#6f95b0',codes:'#116d72'};
+ const layers={},colors={blocks:'#809f9d',lots:'#baa764',roads:'#6f95b0',codes:'#116d72'};let highlight,poiLayer;
  let controller=0,debounce;
  const territory=L.latLngBounds([]);
  quality.filter(x=>x.bounds).forEach(x=>{territory.extend([x.bounds[1],x.bounds[0]]);territory.extend([x.bounds[3],x.bounds[2]]);});
@@ -82,6 +82,12 @@ async function mapPage(){
  points.filter(p=>p.active).forEach(x=>marker(x,'Punto de pago: '+x.name,'#75559c'));
  function fit(){if(territory.isValid())localMap.fitBounds(territory,{padding:[15,15],maxZoom:17});}
  $('#map-fit').onclick=fit;fit();
+ function updateLegend(){const visible=[...document.querySelectorAll('[data-layer]:checked')].map(i=>i.dataset.layer);$('#sig-legend').innerHTML='<h3>Leyenda visible</h3>'+(visible.length?visible.map(key=>`<p><b style="color:${colors[key]}">●</b> ${names[key]}</p>`).join(''):'<p>Sin capas SIG activas.</p>')+'<small>La leyenda cambia según las capas activas.</small>';}
+ async function identify(key,id,zoom=true){try{const feature=await api(`/geo/${key}/${id}`);const properties=feature.properties??{};const attrs=Object.entries(properties).filter(([name,value])=>name!=='attributes'&&value!=null).map(([name,value])=>`<dt>${esc(name)}</dt><dd>${esc(value)}</dd>`).join('');const source=Object.entries(properties.attributes??{}).map(([name,value])=>`<dt>${esc(name)}</dt><dd>${esc(value)}</dd>`).join('');$('#map-detail').innerHTML=`<h3>${esc(names[key]??key)} · ${esc(properties.label??id)}</h3><dl>${attrs}</dl>${source?`<details><summary>Atributos originales</summary><dl>${source}</dl></details>`:''}`;if(highlight)localMap.removeLayer(highlight);if(feature.geometry){highlight=L.geoJSON(feature,{style:{color:'#d05237',weight:4,fillOpacity:.12},pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:9,color:'#d05237',weight:3,fillOpacity:.35})}).addTo(localMap);const bounds=highlight.getBounds();if(zoom&&bounds.isValid())localMap.fitBounds(bounds,{padding:[30,30],maxZoom:18});}}catch(err){$('#map-detail').innerHTML='<div class="error">'+esc(err.message)+'</div>';}}
+ async function searchGeo(page=1){const text=$('#geo-search-text').value.trim();if(text.length<2){$('#geo-results').innerHTML='<p class="tagline">Escriba al menos dos caracteres.</p>';return;}const selected=[...document.querySelectorAll('[data-search-layer]:checked')].map(x=>x.dataset.searchLayer);if(!selected.length){$('#geo-results').innerHTML='<p class="tagline">Seleccione al menos una capa.</p>';return;}const result=await api('/geo/search?text='+encodeURIComponent(text)+'&layers='+encodeURIComponent(selected.join(','))+'&page='+page+'&pageSize=10');const rows=result.items;$('#geo-results').innerHTML='<p class="tagline">'+result.total+' resultado(s)</p>'+table(rows,[{label:'Entidad',render:r=>esc(names[r.layer]+' · '+r.label)},{label:'Detalle',render:r=>esc(r.detail)},{label:'',render:r=>act('Ver',()=>identify(r.layer,r.id),'secondary')}])+(result.total>10?`<div class="pager"><button class="secondary" ${page===1?'disabled':''} id="geo-prev">Anterior</button><span>Página ${page}</span><button class="secondary" ${page*10>=result.total?'disabled':''} id="geo-next">Siguiente</button></div>`:'');$('#geo-prev')&&( $('#geo-prev').onclick=()=>searchGeo(page-1));$('#geo-next')&&( $('#geo-next').onclick=()=>searchGeo(page+1));}
+ async function places(){const center=localMap.getCenter(),status=$('#poi-status');status.textContent='Consultando lugares cercanos…';try{const data=await api('/geo/places?lat='+encodeURIComponent(center.lat)+'&lon='+encodeURIComponent(center.lng)+'&radius=1000');if(poiLayer)localMap.removeLayer(poiLayer);poiLayer=L.geoJSON(data,{pointToLayer:(feature,ll)=>L.circleMarker(ll,{radius:6,color:'#6a4c93',weight:2,fillColor:'#b697dc',fillOpacity:.8}),onEachFeature:(feature,l)=>{const p=feature.properties??{};l.bindPopup('<strong>'+esc(p.name||'Lugar de interés')+'</strong><br><small>'+esc(p.kinds||'Referencia')+'</small>');}}).addTo(localMap);status.textContent=(data.features?.length??0)+' lugar(es) de interés mostrados alrededor del centro.';}catch(err){status.textContent=err.message;}}
+ $('#geo-search').onclick=()=>searchGeo();$('#geo-search-text').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();searchGeo();}};
+ $('#poi-search').onclick=places;
  async function load(){
   if(map!==localMap)return;
   const id=++controller,bounds=localMap.getBounds(),zoom=localMap.getZoom();
@@ -98,16 +104,17 @@ async function mapPage(){
     truncated ||= data.truncated;counts.push(`${names[key]}: ${data.features.length}`);
     layers[key]=L.geoJSON(data,{style:{color:colors[key],weight:1,fillOpacity:.04},pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:4,color:colors[key]}),onEachFeature:(f,l)=>{
      const relation=key==='codes'?` · Lote: ${f.properties.idLote??'sin vínculo'}`:key==='lots'?` · Manzana: ${f.properties.idManzana??'sin vínculo'}${f.properties.idManzana?' (vínculo por punto interior)':''}`:'';
-     l.bindPopup(esc((f.properties.label??names[key])+' · ID '+f.id+relation));
+     l.bindPopup(esc((f.properties.label??names[key])+' · ID '+f.id+relation));l.on('click',()=>identify(key,f.id,false));
     }}).addTo(localMap);
    }
    if(id!==controller||map!==localMap)return;
-   status.textContent=`Zoom ${zoom}. ${counts.join(' · ')||'Sin capas SIG visibles.'} ${deferred.length?'Acerque a zoom 16 para '+deferred.join(' y ')+'. ':''}${truncated?'Límite de 1.000 elementos por capa: acerque el mapa.':''}`;
+   status.textContent=`Zoom ${zoom}. ${counts.join(' · ')||'Sin capas SIG visibles.'} ${deferred.length?'Acerque a zoom 16 para '+deferred.join(' y ')+'. ':''}${truncated?'Límite de 1.000 elementos por capa: acerque el mapa.':''}`;updateLegend();
   }catch(err){if(id===controller&&map===localMap)status.textContent=err.message;}
  }
  localMap.on('moveend',()=>{clearTimeout(debounce);debounce=setTimeout(load,300);});
+ localMap.on('mousemove',e=>{$('#map-coordinates').textContent='Coordenadas: '+e.latlng.lat.toFixed(6)+', '+e.latlng.lng.toFixed(6);});
  localMap.on('unload',()=>{clearTimeout(debounce);controller++;});
- document.querySelectorAll('[data-layer]').forEach(i=>i.onchange=load);
+ document.querySelectorAll('[data-layer]').forEach(i=>i.onchange=load);updateLegend();
  await load();
 }
 boot();

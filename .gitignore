@@ -7,3 +7,4 @@
 *.bak
 !AquaControl/database/backups/AquaControlDev_20260922.bak
 TestResults/
+AquaControl/output/

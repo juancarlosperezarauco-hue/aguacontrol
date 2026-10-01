@@ -28,5 +28,6 @@ new MutationObserver(()=>{
   const light=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:20,attribution:'© OpenStreetMap contributors © CARTO'});
   const dark=L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:20,attribution:'© OpenStreetMap contributors © CARTO'});
   const satellite=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'});
-  L.control.layers({'Territorio SIG':territorio,'Calles':streets,'Vista clara':light,'Vista oscura':dark,'Satélite':satellite},null,{position:'topright',collapsed:false}).addTo(map);
+  const topo=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'Map data © OpenStreetMap contributors, SRTM | Map style © OpenTopoMap (CC-BY-SA)'});
+  L.control.layers({'Territorio SIG':territorio,'Calles':streets,'Vista clara':light,'Vista oscura':dark,'Satélite':satellite,'OpenTopoMap':topo},null,{position:'topright',collapsed:false}).addTo(map);
 }).observe(document.querySelector('#content'),{childList:true,subtree:true});

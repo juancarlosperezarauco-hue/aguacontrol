@@ -8,6 +8,7 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
+from urllib.parse import urlencode
 
 parser = argparse.ArgumentParser()
 parser.add_argument('url')
@@ -52,8 +53,18 @@ for layer in layers:
         assert feature['geometry']['type'] in {'Point', 'MultiPolygon', 'Polygon', 'MultiLineString', 'LineString'}
     empty = request(f"/geo/{layer['layer']}?west=0&south=0&east=1&north=1")
     assert not empty['features'] and not empty['truncated']
+    sample = collection['features'][0]
+    detail = request(f"/geo/{layer['layer']}/{sample['id']}")
+    assert detail['type'] == 'Feature' and detail['id'] == sample['id']
+    assert detail['properties']['layer'] == layer['layer']
+    term = str(sample['properties'].get('label') or sample['id'])
+    if len(term) >= 2:
+        result = request('/geo/search?' + urlencode({'text': term, 'layers': layer['layer'], 'page': 1, 'pageSize': 10}))
+        assert result['total'] >= 1
+        assert any(row['id'] == sample['id'] for row in result['items'])
 request('/geo/codes?west=1&south=0&east=0&north=1', expected=400)
 request('/geo/codes?west=-181&south=0&east=0&north=1', expected=400)
 request('/geo/unknown?west=0&south=0&east=1&north=1', expected=400)
+request('/geo/search?text=x&layers=codes', expected=400)
 Path(args.report).write_text(json.dumps({'result': 'PASS', 'checks': checks}, indent=2), encoding='utf-8')
 print(f'PASS: {len(checks)} peticiones verificadas. Informe: {args.report}')
