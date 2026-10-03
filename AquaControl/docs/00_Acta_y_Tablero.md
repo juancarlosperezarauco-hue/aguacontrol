@@ -26,6 +26,7 @@ AquaControl gestiona abonados, conexiones, medición, facturación, cobros simul
 | Migrador y bitácora | Completada | menú **Migrar SIG**. |
 | Consultas GeoJSON, búsqueda y ficha | Completada | menú **Territorio y servicio**. |
 | Mapa con capas, leyenda y estilos | Completada | Calles, clara, oscura, satélite y topográfico de Esri, sin clave API. |
+| Modelo 3D operativo | Completada | Extrusión interactiva de manzanas, vías y conexiones desde las capas SIG. |
 | Referencias OpenStreetMap | Completada | consulta limitada y con caché, sin clave API. |
 
 ## Criterio de aceptación

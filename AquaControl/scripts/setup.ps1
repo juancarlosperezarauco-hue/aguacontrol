@@ -13,6 +13,7 @@ $assets = @{
  'leaflet.js'='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
  'leaflet.css'='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
  'bootstrap-grid.min.css'='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap-grid.min.css'
+ 'three.min.js'='https://unpkg.com/three@0.160.1/build/three.min.js'
 }
 foreach ($asset in $assets.GetEnumerator()) {
     $target = Join-Path $vendor $asset.Key
