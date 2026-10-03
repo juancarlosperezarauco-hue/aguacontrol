@@ -10,7 +10,7 @@ flowchart LR
   AP --> IN[Infrastructure: EF Core y SIG]
   IN --> SQL[(SQL Server + Spatial 4326)]
   A --> OSM[Overpass / OpenStreetMap: referencias cercanas]
-  W --> T[Capas base: OSM, CARTO, Esri, OpenTopoMap]
+  W --> T[Capas base Esri: calles, clara, oscura, satélite y topográfica]
 ```
 
 La Web solo llama a `/api/geo/places`; AquaControl consulta el servicio de referencias desde el servidor con límites y caché.

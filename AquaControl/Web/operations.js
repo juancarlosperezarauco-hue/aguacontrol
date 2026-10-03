@@ -23,11 +23,21 @@ new MutationObserver(()=>{
 new MutationObserver(()=>{
   if(!map||map._aquaBaseStyles||!window.L||!document.querySelector('#map'))return;
   map._aquaBaseStyles=true;
-  const territorio=L.layerGroup().addTo(map);
-  const streets=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'});
-  const light=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:20,attribution:'© OpenStreetMap contributors © CARTO'});
-  const dark=L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:20,attribution:'© OpenStreetMap contributors © CARTO'});
-  const satellite=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'});
-  const topo=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'Map data © OpenStreetMap contributors, SRTM | Map style © OpenTopoMap (CC-BY-SA)'});
-  L.control.layers({'Territorio SIG':territorio,'Calles':streets,'Vista clara':light,'Vista oscura':dark,'Satélite':satellite,'OpenTopoMap':topo},null,{position:'topright',collapsed:false}).addTo(map);
+  const status=document.querySelector('#map-status');
+  const source='https://server.arcgisonline.com/ArcGIS/rest/services/';
+  const base=(service,label,maxZoom=19)=>{
+    const layer=L.tileLayer(source+service+'/MapServer/tile/{z}/{y}/{x}',{maxZoom,attribution:'Tiles © Esri'});
+    let errors=0;
+    layer.on('tileerror',()=>{errors++;if(map.hasLayer(layer)&&errors===3&&status)status.textContent='No se pudo cargar '+label+'. Las capas SIG permanecen disponibles; seleccione otra vista base.';});
+    layer.on('load',()=>{errors=0;if(map.hasLayer(layer)&&status)status.textContent='Vista base activa: '+label+'.';});
+    return layer;
+  };
+  const streets=base('World_Street_Map','Calles');
+  const light=base('Canvas/World_Light_Gray_Base','Vista clara',16);
+  const dark=base('Canvas/World_Dark_Gray_Base','Vista oscura',16);
+  const satellite=base('World_Imagery','Satélite');
+  const topo=base('World_Topo_Map','Topográfico');
+  topo.addTo(map);
+  map.on('baselayerchange',event=>{if(status)status.textContent='Vista base activa: '+event.name+'.';});
+  L.control.layers({'Calles':streets,'Vista clara':light,'Vista oscura':dark,'Satélite':satellite,'Topográfico':topo},null,{position:'topright',collapsed:false}).addTo(map);
 }).observe(document.querySelector('#content'),{childList:true,subtree:true});

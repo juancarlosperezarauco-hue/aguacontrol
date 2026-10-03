@@ -99,7 +99,7 @@ La instalación con los datos SIG originales se consulta en `http://localhost:50
 
 El mapa consulta las capas por extensión visible, muestra hasta 1.000 geometrías por capa y avisa cuando hay más resultados. Manzanas y vías aparecen en la vista general; lotes y códigos fijos se cargan desde el zoom 16 al activar sus casillas. “Ver territorio” ajusta la vista a la extensión de las capas. Las ventanas de detalle muestran el identificador y el vínculo con lote/manzana cuando existe. Las conexiones muestran el cliente accesible según los contratos cargados.
 
-También permite buscar código fijo, lote, manzana o vía; **Ver** centra la entidad, la resalta y muestra sus atributos conservados. El selector de mapa ofrece Calles, vista clara, vista oscura, satélite y **OpenTopoMap**. El visor muestra coordenadas WGS84 y una leyenda dinámica. **Lugares cercanos · OSM** consulta bancos, salud, educación y oficinas desde el servidor, sin clave API. La consulta se limita a 2 km, 50 resultados, una solicitud externa simultánea y una caché de diez minutos.
+También permite buscar código fijo, lote, manzana o vía; **Ver** centra la entidad, la resalta y muestra sus atributos conservados. El selector de mapa ofrece Calles, vista clara, vista oscura, satélite y **Topográfico**, desde servicios públicos de Esri sin clave API. El visor muestra coordenadas WGS84 y una leyenda dinámica. **Lugares cercanos · OSM** consulta bancos, salud, educación y oficinas desde el servidor, sin clave API. La consulta se limita a 2 km, 50 resultados, una solicitud externa simultánea y una caché de diez minutos.
 
 Para repetir la auditoría de solo lectura, después de compilar:
 

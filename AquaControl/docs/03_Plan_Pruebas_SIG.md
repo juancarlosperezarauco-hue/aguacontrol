@@ -17,7 +17,7 @@ La prueba no modifica clientes, cobros ni capas. Valida autenticación, las cuat
 | SIG-01 | Abrir **Territorio y servicio** | Se muestran las capas activas y la leyenda. |
 | SIG-02 | Buscar un código fijo, lote, manzana o vía | La lista identifica la capa y **Ver** centra y resalta la geometría. |
 | SIG-03 | Hacer clic en una geometría | Se ven atributos del sistema y atributos originales. |
-| SIG-04 | Cambiar mapa base | El control Leaflet permite Calles, clara, oscura, satélite u OpenTopoMap. |
+| SIG-04 | Cambiar mapa base | El control Leaflet permite Calles, clara, oscura, satélite o Topográfico. |
 | SIG-05 | Mover el cursor | Se muestran coordenadas WGS84. |
 | SIG-06 | Ejecutar una carga SIG | Se previsualizan cuatro capas, se registra avance y se conserva bitácora. |
 | SIG-07 | Pulsar **Lugares cercanos · OSM** | El botón muestra hasta 50 referencias cercanas al centro. |
