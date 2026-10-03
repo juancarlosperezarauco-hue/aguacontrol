@@ -9,11 +9,11 @@ flowchart LR
   A --> AP[Application: reglas de negocio]
   AP --> IN[Infrastructure: EF Core, SIG, pagos simulados]
   IN --> SQL[(SQL Server + Spatial 4326)]
-  A --> OTM[OpenTripMap API: referencias opcionales]
+  A --> OSM[Overpass / OpenStreetMap: referencias cercanas]
   W --> T[Capas base: OSM, CARTO, Esri, OpenTopoMap]
 ```
 
-La clave de OpenTripMap permanece en el servidor y la Web solo llama a `/api/geo/places`.
+La Web solo llama a `/api/geo/places`; AquaControl consulta el servicio de referencias desde el servidor con límites y caché.
 
 ## Modelo de clases principal
 

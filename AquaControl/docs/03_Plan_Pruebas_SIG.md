@@ -20,8 +20,8 @@ La prueba no modifica clientes, cobros ni capas. Valida autenticación, las cuat
 | SIG-04 | Cambiar mapa base | El control Leaflet permite Calles, clara, oscura, satélite u OpenTopoMap. |
 | SIG-05 | Mover el cursor | Se muestran coordenadas WGS84. |
 | SIG-06 | Ejecutar una carga SIG | Se previsualizan cuatro capas, se registra avance y se conserva bitácora. |
-| SIG-07 | Usar una clave OpenTripMap válida | El botón muestra referencias del entorno cerca del centro. |
-| SIG-08 | Usar OpenTripMap sin clave | Se informa que falta configurar la clave, sin exponer secretos. |
+| SIG-07 | Pulsar **Lugares cercanos · OSM** | El botón muestra hasta 50 referencias cercanas al centro. |
+| SIG-08 | Repetir la misma consulta | El resultado se entrega desde caché y no realiza una nueva consulta externa. |
 
 ## Evidencia a guardar
 
