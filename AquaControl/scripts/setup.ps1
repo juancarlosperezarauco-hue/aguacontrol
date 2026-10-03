@@ -10,7 +10,6 @@ if (!(Test-Path -LiteralPath $sdk)) {
 $vendor = Join-Path $projectRoot 'Web/vendor'
 New-Item -ItemType Directory -Force $vendor | Out-Null
 $assets = @{
- 'qrcode.js'='https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js'
  'leaflet.js'='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
  'leaflet.css'='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
  'bootstrap-grid.min.css'='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap-grid.min.css'

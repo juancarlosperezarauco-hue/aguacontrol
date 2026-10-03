@@ -28,6 +28,6 @@ async function startSig(){
 new MutationObserver(()=>{
   const controls=document.querySelector('.map-controls');if(!controls||document.querySelector('#sig-legend'))return;
   const legend=document.createElement('section');legend.id='sig-legend';legend.className='map-legend';
-  legend.innerHTML='<h3>Leyenda</h3><p><b style="color:#809f9d">■</b> Manzanas</p><p><b style="color:#baa764">■</b> Lotes</p><p><b style="color:#6f95b0">━</b> Vías</p><p><b style="color:#116d72">●</b> Código Fijo</p><p><b style="color:#088879">●</b> Conexiones</p><p><b style="color:#c38735">●</b> Órdenes de trabajo</p><p><b style="color:#75559c">●</b> Puntos de pago</p><small>Los colores de la vista base no cambian esta simbología operativa.</small>';
+  legend.innerHTML='<h3>Leyenda</h3><p><b style="color:#809f9d">■</b> Manzanas</p><p><b style="color:#baa764">■</b> Lotes</p><p><b style="color:#6f95b0">━</b> Vías</p><p><b style="color:#116d72">●</b> Código Fijo</p><p><b style="color:#088879">●</b> Conexiones</p><p><b style="color:#c38735">●</b> Órdenes de trabajo</p><small>Los colores de la vista base no cambian esta simbología operativa.</small>';
   controls.append(legend);
 }).observe(document.querySelector('#content'),{childList:true,subtree:true});

@@ -5,7 +5,7 @@ using System.Globalization;
 using static AquaControl.Domain.Workflow;
 namespace AquaControl.Application;
 
-public partial class AquaService(IData db,IPaymentGateway gateway) {
+public partial class AquaService(IData db) {
  public async Task<T> Get<T>(int id) where T:Entity => await db.Set<T>().FindAsync(id) ?? throw new BusinessException("Registro no encontrado.");
  public async Task<HashSet<string>> Permissions(int userId) {
   var roles=from ur in db.Set<UserRole>() join r in db.Set<Role>() on ur.RoleId equals r.Id where ur.UserId==userId&&r.Active select r.Id;
@@ -68,24 +68,4 @@ public partial class AquaService(IData db,IPaymentGateway gateway) {
  }
  public async Task<List<object>> InvoiceList(Actor a){var ids=Contracts(a).Select(x=>x.Id);var list=await db.Set<Invoice>().Where(x=>ids.Contains(x.ContractId)).OrderByDescending(x=>x.Id).Take(500).ToListAsync();var output=new List<object>();foreach(var i in list)output.Add(new{i.Id,i.Number,i.ContractId,i.Period,i.DueAt,i.Total,i.Currency,i.Consumption,i.HolderName,balance=await Balance(i.Id),version=Convert.ToBase64String(i.Version)});return output;}
  public async Task Adjust(Actor a,int invoiceId,decimal amount,string reason){a.Require("billing.adjust");Require(amount!=0&&!string.IsNullOrWhiteSpace(reason),"Importe y motivo obligatorios.");using var tx=await db.Database.BeginTransactionAsync(IsolationLevel.Serializable);Require(await Balance(invoiceId)+amount>=0,"El ajuste no puede dejar saldo negativo.");db.Set<InvoiceAdjustment>().Add(new(){InvoiceId=invoiceId,Amount=Money(amount),Reason=reason,UserId=a.Id});Audit(a,"factura.ajustar",invoiceId.ToString(),reason);await db.SaveChangesAsync();var i=await Get<Invoice>(invoiceId);var c=await Get<Contract>(i.ContractId);await ReevaluateCuts(c.AccountId,a);await db.SaveChangesAsync();await tx.CommitAsync();}
- public async Task<PaymentIntent> StartPayment(Actor a,NewIntent r,CancellationToken ct){
-  await AccountAccess(a,r.AccountId);Require(r.Method is "QR" or "TARJETA","Método inválido.");Require(r.Amount>0&&r.Key.Length is >=8 and <=80,"Importe o clave inválidos.");
-  var prior=await db.Set<PaymentIntent>().SingleOrDefaultAsync(x=>x.Key==r.Key);if(prior!=null){Require(prior.AccountId==r.AccountId&&prior.UserId==a.Id&&prior.Amount==Money(r.Amount)&&prior.Method==r.Method,"Clave de pago usada con otra solicitud.");return prior;}
-  var ids=Contracts(a).Where(x=>x.AccountId==r.AccountId).Select(x=>x.Id);var invoices=await db.Set<Invoice>().Where(x=>ids.Contains(x.ContractId)).ToListAsync();Require(invoices.Count>0,"No hay facturas.");Require(invoices.Select(x=>x.Currency).Distinct().Count()==1,"Monedas incompatibles.");decimal debt=0;foreach(var i in invoices)debt+=await Balance(i.Id);Require(r.Amount<=debt,"El importe supera la deuda.");
-  var intent=new PaymentIntent{AccountId=r.AccountId,UserId=a.Id,Amount=Money(r.Amount),Method=r.Method,Key=r.Key,Currency=invoices[0].Currency};
-  var checkout=await gateway.CreateAsync(intent,ct);intent.Provider=checkout.Provider;intent.CheckoutUrl=checkout.Url;db.Set<PaymentIntent>().Add(intent);Audit(a,"pago.iniciar",r.AccountId.ToString());await db.SaveChangesAsync();return intent;
- }
- public async Task<Payment> Confirm(ConfirmPayment r,Actor actor,bool sandbox){
-  using var tx=await db.Database.BeginTransactionAsync(IsolationLevel.Serializable);var intent=await Get<PaymentIntent>(r.IntentId);
-  if(sandbox){actor.Require("payments.confirm");Require(intent.Provider=="SANDBOX","No es un pago de pruebas.");}
-  var oldEvent=await db.Set<PaymentEvent>().SingleOrDefaultAsync(x=>x.ExternalId==r.EventId);Require(oldEvent==null||oldEvent.IntentId==intent.Id,"Evento asociado a otro intento.");
-  Require(intent.Amount==r.Amount&&intent.Currency==r.Currency,"Importe o moneda no coincide.");var existing=await db.Set<Payment>().SingleOrDefaultAsync(x=>x.IntentId==intent.Id);if(existing!=null){await tx.CommitAsync();return existing;}
-  Require(intent.Status=="PENDIENTE","Estado de pago inválido.");Require(!string.IsNullOrWhiteSpace(r.EventId)&&r.EventId.Length<=100,"Referencia inválida.");
-  var p=new Payment{AccountId=intent.AccountId,IntentId=intent.Id,Reference=intent.Provider+":"+r.EventId,Amount=intent.Amount,Method=intent.Method};db.Set<Payment>().Add(p);await db.SaveChangesAsync();
-  var contracts=db.Set<Contract>().Where(x=>x.AccountId==p.AccountId).Select(x=>x.Id);var invoices=await db.Set<Invoice>().Where(x=>contracts.Contains(x.ContractId)&&x.Currency==intent.Currency).OrderBy(x=>x.DueAt).ThenBy(x=>x.Id).ToListAsync();var remaining=p.Amount;
-  foreach(var i in invoices){var balance=await Balance(i.Id);var applied=Math.Min(remaining,Math.Max(balance,0));if(applied>0)db.Set<PaymentAllocation>().Add(new(){PaymentId=p.Id,InvoiceId=i.Id,Amount=applied});remaining-=applied;if(remaining==0)break;}
-  // Unapplied remainder is retained on Payment and exposed as credit; never discarded.
-  intent.Status="CONFIRMADO";db.Set<PaymentEvent>().Add(new(){IntentId=intent.Id,ExternalId=r.EventId});Audit(actor,"pago.confirmar",p.Id.ToString());await db.SaveChangesAsync();await ReevaluateCuts(p.AccountId,actor);await db.SaveChangesAsync();await tx.CommitAsync();return p;
- }
- public async Task Reverse(Actor a,int id,string reference,string reason){a.Require("billing.adjust");Require(!string.IsNullOrWhiteSpace(reference)&&!string.IsNullOrWhiteSpace(reason),"Referencia y motivo requeridos.");using var tx=await db.Database.BeginTransactionAsync(IsolationLevel.Serializable);await Get<Payment>(id);Require(!await db.Set<PaymentReversal>().AnyAsync(x=>x.PaymentId==id),"Pago ya revertido.");db.Set<PaymentReversal>().Add(new(){PaymentId=id,Reference=reference,Reason=reason,UserId=a.Id});Audit(a,"pago.revertir",id.ToString(),reason);await db.SaveChangesAsync();await tx.CommitAsync();}
 }

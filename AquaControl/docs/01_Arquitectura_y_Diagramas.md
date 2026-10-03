@@ -7,7 +7,7 @@ flowchart LR
   U[Cliente / Supervisor / Operario] --> W[Web responsive + Leaflet]
   W -->|HTTPS / API REST| A[ASP.NET Core API]
   A --> AP[Application: reglas de negocio]
-  AP --> IN[Infrastructure: EF Core, SIG, pagos simulados]
+  AP --> IN[Infrastructure: EF Core y SIG]
   IN --> SQL[(SQL Server + Spatial 4326)]
   A --> OSM[Overpass / OpenStreetMap: referencias cercanas]
   W --> T[Capas base: OSM, CARTO, Esri, OpenTopoMap]
@@ -26,7 +26,6 @@ classDiagram
   class MeterInstallation { +ConnectionId +MeterId }
   class Reading { +Period +Value }
   class Invoice { +Number +Total +DueAt }
-  class Payment { +Reference +Amount +Method }
   class WorkOrder { +Number +Status +ScheduledAt }
   class WorkActivity { +Done +Result }
   class FixedCode { +Geom +CodFijo }
@@ -37,7 +36,6 @@ classDiagram
   Meter "1" --> "*" MeterInstallation
   MeterInstallation "1" --> "*" Reading
   Account "1" --> "*" Invoice
-  Account "1" --> "*" Payment
   Connection "1" --> "*" WorkOrder
   WorkOrder "1" --> "*" WorkActivity
   Connection "*" --> "0..1" FixedCode
@@ -63,7 +61,7 @@ erDiagram
 ## Casos de uso prioritarios
 
 - Registrar lectura y generar factura por período.
-- Registrar pago simulado y actualizar el saldo.
-- Generar aviso de corte y cancelar la orden cuando se confirma el pago.
+- Registrar un ajuste administrativo de saldo cuando corresponda.
+- Generar aviso de corte y resolverlo administrativamente cuando corresponda.
 - Crear, asignar, ejecutar, verificar y cerrar una orden.
 - Buscar código, lote, manzana o vía; inspeccionar atributos y ubicar la entidad en el mapa.

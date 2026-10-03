@@ -12,7 +12,7 @@ AquaControl gestiona abonados, conexiones, medición, facturación, cobros simul
 | Administrador | Abonados, conexiones, medidores, facturación y reportes. |
 | Supervisor | Órdenes, asignaciones, reprogramación y verificación. |
 | Operario | Ejecución, actividades, materiales y evidencias. |
-| Cliente | Consulta de contrato, consumo, facturas, pagos y avisos. |
+| Cliente | Consulta de contrato, consumo, facturas y avisos. |
 
 ## Tablero de entregables
 

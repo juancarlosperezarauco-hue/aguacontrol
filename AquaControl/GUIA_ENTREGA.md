@@ -40,7 +40,7 @@ $env:AQUA_BOOTSTRAP_PASSWORD='Escribe-aqui-una-clave-larga-y-nueva'
 
 & .\AquaControl\scripts\setup.ps1 -Initialize
 & .\AquaControl\scripts\import-sig.ps1
-& .\AquaControl\scripts\run.ps1 -SandboxPayments
+& .\AquaControl\scripts\run.ps1
 ```
 
 Si la instancia SQL no usa Named Pipes, reemplaza `Server=np:\\.\pipe\sql\query` por el servidor correspondiente, por ejemplo `Server=localhost` o `Server=SERVIDOR\\INSTANCIA`.
@@ -68,7 +68,7 @@ Entrega el `.bak` por un canal seguro y restáuralo en el SQL Server receptor. E
 
 ```powershell
 $env:ConnectionStrings__Aqua='Server=np:\\.\pipe\sql\query;Database=AquaControlDev;Integrated Security=true;Encrypt=false;TrustServerCertificate=true'
-& .\AquaControl\scripts\run.ps1 -SandboxPayments
+& .\AquaControl\scripts\run.ps1
 ```
 
 El respaldo contiene cuentas y datos operativos del entorno de origen. No lo publiques ni lo adjuntes a un repositorio.
@@ -82,7 +82,7 @@ Para revisar la cartografía y sus índices:
 sqlcmd -S 'np:\\.\pipe\sql\query' -E -d AquaControlDev -b -i .\AquaControl\database\03_Verificar_SIG.sql
 ```
 
-La aplicación queda en `http://localhost:5080/#map`. Los pagos QR son simulados y la pantalla de tarjeta es demostrativa; no se procesan cargos reales.
+La aplicación queda en `http://localhost:5080/#map`. AquaControl se ejecuta como sistema operativo: consulta facturas y saldos, genera avisos y gestiona órdenes de campo. No procesa pagos por QR ni tarjeta.
 
 ## Entorno de pruebas separado
 
@@ -92,7 +92,7 @@ No uses `AquaControlTests` para operación. Para repetir las pruebas, inicializa
 $env:ConnectionStrings__Aqua='Server=np:\\.\pipe\sql\query;Database=AquaControlTests;Integrated Security=true;Encrypt=false;TrustServerCertificate=true'
 $env:AQUA_BOOTSTRAP_PASSWORD='Otra-clave-larga-solo-para-pruebas'
 & .\AquaControl\scripts\setup.ps1 -Initialize
-& .\AquaControl\scripts\run.ps1 -Port 5081 -SandboxPayments
+& .\AquaControl\scripts\run.ps1 -Port 5081
 python .\AquaControl\tests\integration.py http://127.0.0.1:5081 --password-file .\AquaControl\.local\acceso-inicial.txt
 ```
 
@@ -126,7 +126,7 @@ Para conservar los datos de desarrollo, restaure primero el respaldo de `AquaCon
 En el equipo que tiene SQL Server y ejecuta AquaControl:
 
 ```powershell
-& .\AquaControl\scripts\run.ps1 -Host lan -Port 5080 -SandboxPayments
+& .\AquaControl\scripts\run.ps1 -Host lan -Port 5080
 ipconfig
 ```
 

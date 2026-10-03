@@ -6,7 +6,7 @@ Aplicación web de gestión de agua con ASP.NET Core, EF Core, SQL Server Spatia
 
 Los módulos contienen persistencia real y API; no hay clientes reales inventados. La base `AquaControlDev` conserva el padrón comercial vacío para introducir datos autorizados. Los Shapefiles originales se importan con procedencia. Las pruebas usan exclusivamente `AquaControlTests` y nombres FICTICIO/TEST.
 
-QR y tarjeta tienen un flujo de **sandbox**, claramente identificado, con confirmación restringida al personal autorizado. **No realiza cargos reales.** Para producción debe implementarse el adaptador del proveedor contratado, sus credenciales, firma de eventos y conciliación. No se solicitan ni almacenan números de tarjeta o CVV. La aplicación rechaza iniciar cobros si el proveedor no está configurado y el sandbox está deshabilitado.
+Esta entrega es netamente operativa: no ofrece QR, tarjeta ni cobro en línea. Las facturas y saldos sirven para el control administrativo y los avisos de corte se resuelven mediante una decisión registrada del supervisor.
 
 ## Ejecutar en este equipo
 
@@ -15,7 +15,7 @@ Para preparar una copia y enviarla a otro equipo, siga primero [GUIA_ENTREGA.md]
 Desde la carpeta del proyecto original:
 
 ```powershell
-& .\AquaControl\scripts\run.ps1 -SandboxPayments
+& .\AquaControl\scripts\run.ps1
 ```
 
 Abrir `http://localhost:5080`. Las credenciales iniciales locales están en `AquaControl/.local/acceso-inicial.txt`, excluido del repositorio. No lo publique ni lo incluya en entregas compartidas.
@@ -37,7 +37,7 @@ El SQL Server local debe estar encendido. Las bases son distintas:
 $env:ConnectionStrings__Aqua='Server=SU_SERVIDOR;Database=AquaControlDev;Integrated Security=true;Encrypt=true;TrustServerCertificate=false'
 $env:AQUA_BOOTSTRAP_PASSWORD='REEMPLAZAR_POR_UN_SECRETO_PROPIO_LARGO'
 & .\AquaControl\scripts\setup.ps1 -Initialize
-& .\AquaControl\scripts\run.ps1 -SandboxPayments
+& .\AquaControl\scripts\run.ps1
 ```
 
 El aprovisionamiento crea `aquadmin`; no use la contraseña ilustrativa de este documento. `setup.ps1` descarga recursos de Leaflet y Bootstrap desde sus distribuciones públicas y compila. La inicialización se destina únicamente a una base nueva con nombre AquaControl; no actualiza esquemas antiguos mediante EnsureCreated.
@@ -53,24 +53,22 @@ El aprovisionamiento crea `aquadmin`; no use la contraseña ilustrativa de este 
 5. **Medidores:** crear medidor e instalarlo con lectura inicial. Para reemplazarlo, registrar lectura final del anterior. Se conserva el historial de instalaciones.
 6. **Lecturas:** registrar período AAAA-MM y lectura no decreciente. Las estimaciones requieren motivo.
 7. **Facturas:** emitir desde contrato y lectura. Se guardan conceptos, precios y datos del titular al emitir. Se impide repetir factura por contrato/período. Ajustes autorizados no alteran la factura original.
-8. **Deudas:** saldo calculado desde total, ajustes, pagos aplicados y reversiones; no se mantiene una tabla independiente de deuda susceptible de divergencia.
-9. **Pagos:** generar intento QR/tarjeta en sandbox, confirmar con perfil autorizado y consultar aplicaciones. La clave del intento y el evento externo impiden duplicados. El portal no ofrece reembolsos; las correcciones históricas se conservan en la bitácora interna.
-10. **Tipos y actividades:** configurar tipos, efecto CORTE/RECONEXION/NINGUNO, actividades, orden y evidencia obligatoria. Las órdenes copian la definición para conservar su contenido histórico.
-11. **Órdenes:** crear, asignar, reasignar, reprogramar y cancelar con motivos. Los operarios solo ejecutan asignaciones vigentes. Supervisor y ejecutor deben ser distintos.
-12. **Ejecución:** EN_CAMINO → EN_EJECUCION, registrar actividades, materiales y archivos JPEG/PNG/PDF. Para finalizar deben cumplirse actividades y evidencias. Supervisor verifica y cierra.
-13. **Avisos de corte:** primero crear política versionada de umbral/plazos y habilitarla. Emitir aviso de un contrato con deuda elegible; programar corte respetando el plazo.
-14. **Pago y corte:** un pago confirmado reevalúa los avisos y cancela los cortes no ejecutados que pierdan causa, en la misma transacción que el pago. Notifica a supervisor y operario mediante notificaciones persistentes. Un pago parcial mantiene el corte si aún supera el umbral.
-15. **SIG:** capas de manzanas, lotes, vías y códigos consultadas por extensión visible, con límite de 1.000 elementos por capa. Conexiones, órdenes y puntos de pago se superponen. Acerque el mapa si se alcanza el límite.
-16. **Puntos de pago:** registrar entidad, banco/cooperativa/oficina/autorizado, dirección, horarios, métodos y coordenadas; aparecen en el mapa del personal autorizado.
-17. **Reportes y auditoría:** resumen de órdenes, recaudación, materiales, exportación CSV de cartera y bitácora de operaciones.
+8. **Saldos:** el saldo se calcula desde factura, ajustes administrativos e historial existente; no se mantiene una tabla independiente susceptible de divergencia.
+9. **Tipos y actividades:** configurar tipos, efecto CORTE/RECONEXION/NINGUNO, actividades, orden y evidencia obligatoria. Las órdenes copian la definición para conservar su contenido histórico.
+10. **Órdenes:** crear, asignar, reasignar, reprogramar y cancelar con motivos. Los operarios solo ejecutan asignaciones vigentes. Supervisor y ejecutor deben ser distintos.
+11. **Ejecución:** EN_CAMINO → EN_EJECUCION, registrar actividades, materiales y archivos JPEG/PNG/PDF. Para finalizar deben cumplirse actividades y evidencias. Supervisor verifica y cierra.
+12. **Avisos de corte:** primero crear política versionada de umbral/plazos y habilitarla. Emitir aviso de un contrato con saldo elegible; programar corte respetando el plazo.
+13. **Resolución administrativa:** el supervisor puede resolver un aviso con motivo; la orden de corte pendiente se cancela y el operario es notificado.
+14. **SIG:** capas de manzanas, lotes, vías y códigos consultadas por extensión visible, con límite de 1.000 elementos por capa. Conexiones y órdenes se superponen. Acerque el mapa si se alcanza el límite.
+15. **Reportes y auditoría:** resumen de órdenes, materiales, exportación CSV de saldos y bitácora de operaciones.
 
 El portal del cliente solo accede a clientes/contratos expresamente vinculados mediante UsuariosClientes. No se asignan clientes por semejanza de nombres SIG. El mapa general no está autorizado para el rol CLIENTE.
 
 ## Corte físico y concurrencia
 
-El operario debe consultar y validar online antes de cortar. La autorización de corte dura 60 segundos y se invalida por pago. Debe registrar el efecto físico antes de finalizar. Un servicio ya cortado no se marca automáticamente como reconectado al pagar: el supervisor recibe aviso para evaluar la reconexión.
+El operario debe consultar y validar online antes de cortar. La autorización de corte dura 60 segundos y se invalida cuando el supervisor resuelve el aviso. Debe registrar el efecto físico antes de finalizar. Un servicio ya cortado requiere una orden de reconexión autorizada por el supervisor.
 
-El sistema no puede hacer atómica una acción humana sobre una válvula con un pago bancario. Ante un pago posterior a la última validación debe detenerse el corte si todavía es físicamente posible. No se admiten cortes offline.
+El sistema no puede hacer atómica una acción humana sobre una válvula y una resolución administrativa posterior. Ante una cancelación posterior a la última validación debe detenerse el corte si todavía es físicamente posible. No se admiten cortes offline.
 
 ## Importar SIG
 
@@ -124,7 +122,7 @@ python .\AquaControl\tests\sig_api.py http://127.0.0.1:5080 --password-file .\Aq
 - `02_Importar_Legado.sql`: preserva usuarios, roles y menús de la instalación inspeccionada en la base independiente. Contiene precondición de órdenes originales vacías. Se bloquea si hay órdenes reales pendientes de mapeo.
 - Los tres usuarios heredados se copian con sus credenciales antiguas y quedan desactivados con cambio de contraseña requerido. Los roles LEGADO conservan su procedencia; el administrador debe asignar permisos operativos revisados.
 - Los menús y autorizaciones originales se archivan íntegros como JSON en MigracionLegado. No se convierten automáticamente en privilegios de API.
-- La base original sigue disponible para rollback de la instalación anterior. Después de registrar operaciones nuevas, no restaurar un respaldo antiguo sobre AquaControl: conciliar y aplicar una corrección que preserve pagos/trabajos nuevos.
+- La base original sigue disponible para rollback de la instalación anterior. Después de registrar operaciones nuevas, no restaurar un respaldo antiguo sobre AquaControl: conciliar y aplicar una corrección que preserve saldos y trabajos nuevos.
 
 ## Pruebas
 
@@ -133,7 +131,7 @@ Ejecutar el servidor contra `AquaControlTests` y puerto 5081:
 ```powershell
 $env:ConnectionStrings__Aqua='Server=lpc:localhost;Database=AquaControlTests;Integrated Security=true;Encrypt=false;TrustServerCertificate=true'
 # Inicializar primero esta base vacía con --init y la contraseña de pruebas.
-& .\AquaControl\scripts\run.ps1 -Port 5081 -SandboxPayments
+& .\AquaControl\scripts\run.ps1 -Port 5081
 ```
 
 En otra terminal:
@@ -142,11 +140,10 @@ En otra terminal:
 python .\AquaControl\tests\integration.py http://127.0.0.1:5081 --password-file .\AquaControl\.local\acceso-inicial.txt
 ```
 
-El script no borra tablas: añade registros ficticios identificables por ejecución. Valida API, SQL real, permisos, consumo/facturación, idempotencia, pago parcial/completo, cancelación de corte, evidencias/materiales y verificación.
+El script no borra tablas: añade registros ficticios identificables por ejecución. Valida API, SQL real, permisos, consumo/facturación, resolución administrativa de corte, evidencias/materiales y verificación.
 
 ## Límites que deben resolverse antes de producción
 
-- Adaptador real QR/tarjeta, webhooks firmados y conciliación externa, si el alcance cambia a cobros reales. El portal actual no ofrece reembolsos.
 - Facturación fiscal según requisitos de la entidad; los documentos actuales son de cobro interno.
 - La facturación inicial usa una lectura por factura; un reemplazo de medidor dentro del mismo período debe resolverse con facturación de múltiples lecturas antes de usar ese caso real.
 - Versionado formal de migraciones incrementales, configuración de políticas reales y ensayo completo de restauración.

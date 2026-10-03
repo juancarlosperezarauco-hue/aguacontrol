@@ -16,7 +16,6 @@ public class CatalogService(IData db,AquaService service){
   new("types","Tipos de trabajo",typeof(WorkType),"orders.read","catalogs.write",["Code","Name","Effect","Active"]),
   new("templates","Actividades de trabajo",typeof(ActivityTemplate),"orders.read","catalogs.write",["WorkTypeId","Sort","Name","Required","EvidenceRequired"]),
   new("materials","Materiales",typeof(Material),"orders.read","catalogs.write",["Code","Name","Unit","Cost","Active"]),
-  new("points","Puntos de pago",typeof(PaymentPoint),"portal.read","catalogs.write",["Name","Kind","Institution","Address","Hours","Methods","Longitude","Latitude","Active"]),
   new("policies","Políticas de cobranza",typeof(CollectionPolicy),"orders.manage","catalogs.write",["Threshold","OverdueDays","NoticeDays","Enabled"])
  ];
  public CatalogDefinition Definition(string key)=>Definitions.FirstOrDefault(x=>x.Key==key)??throw new BusinessException("Catálogo desconocido.");
@@ -41,7 +40,6 @@ public class CatalogService(IData db,AquaService service){
   if(entity is WorkType w)Require(w.Effect is "NINGUNO" or "CORTE" or "RECONEXION","Efecto inválido.");
   if(entity is Material m)Require(m.Cost>=0,"Costo inválido.");
   if(entity is CollectionPolicy pcy)Require(pcy.Threshold>=0&&pcy.OverdueDays>=0&&pcy.NoticeDays>=0,"Valores de política inválidos.");
-  if(entity is PaymentPoint point)Require(Math.Abs(point.Longitude)<=180&&Math.Abs(point.Latitude)<=90&&new[]{"BANCO","COOPERATIVA","OFICINA","AUTORIZADO"}.Contains(point.Kind),"Punto de pago inválido.");
   if(!id.HasValue)db.Set<T>().Add(entity);service.Audit(actor,"catalogo.guardar",def.Key+":"+(id?.ToString()??"nuevo"));await db.SaveChangesAsync();return entity;
  }
 }
