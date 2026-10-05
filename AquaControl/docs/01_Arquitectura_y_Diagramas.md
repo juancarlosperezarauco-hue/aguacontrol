@@ -4,13 +4,14 @@
 
 ```mermaid
 flowchart LR
-  U[Cliente / Supervisor / Operario] --> W[Web responsive + Leaflet]
+  U[Cliente / Supervisor / Operario] --> W[Web responsive + Leaflet + modelo 3D]
   W -->|HTTPS / API REST| A[ASP.NET Core API]
   A --> AP[Application: reglas de negocio]
   AP --> IN[Infrastructure: EF Core y SIG]
   IN --> SQL[(SQL Server + Spatial 4326)]
   A --> OSM[Overpass / OpenStreetMap: referencias cercanas]
   W --> T[Capas base Esri: calles, clara, oscura, satélite y topográfica]
+  W --> D[Three.js: modelo territorial 3D]
 ```
 
 La Web solo llama a `/api/geo/places`; AquaControl consulta el servicio de referencias desde el servidor con límites y caché.
@@ -30,12 +31,12 @@ classDiagram
   class WorkActivity { +Done +Result }
   class FixedCode { +Geom +CodFijo }
   class Lot { +Geom }
-  Client "1" --> "*" Account
-  Account "1" --> "*" Connection
+  Client "1" --> "*" Contract
+  Account "1" --> "*" Contract
+  Connection "1" --> "*" Contract
   Connection "1" --> "*" MeterInstallation
   Meter "1" --> "*" MeterInstallation
   MeterInstallation "1" --> "*" Reading
-  Account "1" --> "*" Invoice
   Connection "1" --> "*" WorkOrder
   WorkOrder "1" --> "*" WorkActivity
   Connection "*" --> "0..1" FixedCode
@@ -49,19 +50,21 @@ erDiagram
   MANZANAS ||--o{ LOTES : contiene
   LOTES ||--o{ CODIGOS_FIJOS : ubica
   CODIGOS_FIJOS ||--o{ CONEXIONES : referencia
-  CLIENTES ||--o{ CUENTAS : titular
+  CLIENTES ||--o{ CONTRATOS : suscribe
   CUENTAS ||--o{ CONTRATOS : mantiene
   CONEXIONES ||--o{ CONTRATOS : servicio
   CONTRATOS ||--o{ FACTURAS : factura
-  CUENTAS ||--o{ PAGOS : recibe
   CONTRATOS ||--o{ AVISOS_CORTE : genera
   AVISOS_CORTE ||--o| ORDENES_TRABAJO : origina
 ```
 
 ## Casos de uso prioritarios
 
-- Registrar lectura y generar factura por período.
-- Registrar un ajuste administrativo de saldo cuando corresponda.
-- Generar aviso de corte y resolverlo administrativamente cuando corresponda.
-- Crear, asignar, ejecutar, verificar y cerrar una orden.
-- Buscar código, lote, manzana o vía; inspeccionar atributos y ubicar la entidad en el mapa.
+Los flujos, actores, reglas y pantallas asociadas se detallan en `docs/07_Casos_Uso_y_Prototipos.md`.
+
+## Estrategia Git
+
+- `main` contiene versiones integradas y verificadas localmente.
+- Cada cambio funcional se registra en un commit descriptivo y se publica en `origin/main`.
+- Los cambios de base de datos se acompañan con un script SQL idempotente y una verificación de predespliegue.
+- Los respaldos y archivos locales de contraseñas están excluidos del control de versiones.

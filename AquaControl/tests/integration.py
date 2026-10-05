@@ -30,7 +30,8 @@ admin.request('/catalog/clients',{'name':'CSRF must fail'},expected=400,csrf=Fal
 tag=secrets.token_hex(4);user_password='Test-only-1!'+tag
 client=admin.create('clients',{'name':'FICTICIO PRUEBA '+tag,'document':'TEST-'+tag,'email':'','phone':'','address':'Direccion ficticia','active':True})
 account=admin.create('accounts',{'number':'TEST-'+tag,'active':True})
-connection=admin.create('connections',{'code':'TEST-'+tag,'longitude':-60.965,'latitude':-16.38,'address':'Conexion ficticia'})
+summary=admin.request('/geo-summary');codes=next(x for x in summary if x['layer']=='codes');west,south,east,north=codes['bounds'];fixed_codes=admin.request(f'/geo/codes?west={west}&south={south}&east={east}&north={north}')['features'];used_codes={x.get('fixedCodeId') for x in admin.request('/lookup')['connections']};fixed_code=next((x for x in fixed_codes if x['id'] not in used_codes),None);assert fixed_code,'No hay Código Fijo SIG libre para la prueba.'
+connection=admin.create('connections',{'code':'TEST-'+tag,'fixedCodeId':fixed_code['id'],'longitude':-60.965,'latitude':-16.38,'address':'Conexion ficticia'})
 tariff=admin.create('tariffs',{'name':'Tarifa prueba '+tag,'currency':'BOB','fixedCharge':10,'unitPrice':2,'start':datetime.datetime.now(datetime.timezone.utc).isoformat(),'active':True})
 contract=admin.request('/contracts',{'accountId':account['id'],'clientId':client['id'],'connectionId':connection['id'],'tariffId':tariff['id']})
 meter=admin.create('meters',{'serial':'TEST-'+tag,'model':'Medidor ficticio','active':True})
