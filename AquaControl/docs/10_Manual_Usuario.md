@@ -82,6 +82,19 @@ Hay dos formas:
 
 Seleccione la instalación, indique el período en formato `AAAA-MM`, la lectura actual y, si corresponde, marque que es una estimación. El sistema conserva la lectura anterior para calcular el consumo.
 
+### Ruta masiva de lectura y recibos
+
+Para preparar la lectura mensual, el supervisor o administrador abre **Lecturas y consumo → Planificar ruta de lecturas**. El sistema selecciona automáticamente los medidores que cumplen estas condiciones:
+
+- Tienen instalación de medidor activa y medidor activo.
+- Pertenecen a un contrato vigente.
+- La conexión no está cortada, inactiva ni pendiente de instalación.
+- Aún no tienen lectura ni una orden abierta para el período elegido.
+
+Seleccione el período, supervisor, operario y fecha programada. AquaControl crea una orden de tipo **Lectura de medidor** por cada medidor elegible, las asigna al operario y las incorpora a su ruta en el mapa.
+
+El operario abre cada parada de su ruta y pulsa **Registrar lectura**. Una vez cargadas las lecturas, el administrador pulsa **Generar recibos del período**. El sistema calcula automáticamente el consumo usando `lectura actual − lectura anterior`, aplica la tarifa vigente y genera los recibos o facturas pendientes del período.
+
 ### Emitir una factura
 
 1. Abra **Facturas y saldos**.
