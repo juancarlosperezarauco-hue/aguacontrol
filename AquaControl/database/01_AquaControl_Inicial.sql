@@ -454,7 +454,7 @@ CREATE TABLE [Conexiones] (
     [Address] nvarchar(250) NOT NULL,
     [Longitude] float NOT NULL,
     [Latitude] float NOT NULL,
-    [Status] nvarchar(20) NOT NULL,
+    [Status] nvarchar(40) NOT NULL,
     [Version] rowversion NOT NULL,
     CONSTRAINT [PK_Conexiones] PRIMARY KEY ([Id]),
     CONSTRAINT [CK_Connection_Coordinates] CHECK ([Longitude] BETWEEN -180 AND 180 AND [Latitude] BETWEEN -90 AND 90),

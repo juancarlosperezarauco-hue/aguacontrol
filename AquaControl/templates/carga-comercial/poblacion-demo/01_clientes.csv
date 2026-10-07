@@ -1,0 +1,9 @@
+documento,nombre,telefono,email,direccion,activo
+DEMO-CL-0101,Usuario Demostración 01,+59170001001,usuario01@example.invalid,Av. SIG Demostración 101,true
+DEMO-CL-0102,Usuario Demostración 02,+59170001002,usuario02@example.invalid,Av. SIG Demostración 102,true
+DEMO-CL-0103,Usuario Demostración 03,+59170001003,usuario03@example.invalid,Av. SIG Demostración 103,true
+DEMO-CL-0104,Usuario Demostración 04,+59170001004,usuario04@example.invalid,Av. SIG Demostración 104,true
+DEMO-CL-0105,Usuario Demostración 05,+59170001005,usuario05@example.invalid,Av. SIG Demostración 105,true
+DEMO-CL-0106,Usuario Demostración 06,+59170001006,usuario06@example.invalid,Av. SIG Demostración 106,true
+DEMO-CL-0107,Usuario Demostración 07,+59170001007,usuario07@example.invalid,Av. SIG Demostración 107,true
+DEMO-CL-0108,Usuario Demostración 08,+59170001008,usuario08@example.invalid,Av. SIG Demostración 108,true
