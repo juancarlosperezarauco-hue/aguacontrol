@@ -103,6 +103,17 @@ Este proyecto opera los saldos y avisos. Los pagos son simulados o administrativ
 
 También se puede crear una orden general desde **Órdenes de trabajo**.
 
+### Planificar la ruta del operario
+
+1. El **Administrador** crea la cuenta del operario y le asigna el rol **OPERARIO** desde **Configuración avanzada → Usuarios y permisos**.
+2. El supervisor crea las órdenes de lectura, instalación, mantenimiento, reparación o corte para los puntos del mapa.
+3. En cada orden, pulse **Asignar** y elija el operario responsable.
+4. Regrese al **Mapa operativo** y, en **Ruta de trabajo**, seleccione el operario y, si corresponde, la fecha programada.
+5. Pulse **Trazar ruta**. El sistema dibuja puntos numerados y una línea de recorrido sugerida por cercanía entre las órdenes asignadas.
+6. Pulse el número de una parada para abrir la orden y registrar la visita, actividades, lectura, materiales, evidencias y estado de ejecución.
+
+La ruta muestra el orden operativo de las paradas y no reemplaza la decisión del supervisor ni las condiciones reales de tránsito. El operario puede usar las coordenadas del punto para navegar hasta el destino.
+
 ### Asignar y ejecutar
 
 El supervisor abre la orden y puede asignar un operario, reprogramar y controlar el avance. El operario ve sus trabajos asignados, registra las actividades realizadas, materiales, evidencias y observaciones.
@@ -143,8 +154,8 @@ Al resolver un aviso, registre siempre el motivo administrativo. La orden de cor
 
 | Perfil | Responsabilidad habitual |
 |---|---|
-| Super administrador | Usuarios, roles, permisos, configuración y auditoría. |
-| Administrador | Clientes, conexiones, tarifas, facturación y configuración comercial. |
+| Super administrador | Usuarios, roles, permisos, configuración y auditoría global. |
+| Administrador | Crea las cuentas de administradores, supervisores, operarios y clientes; asigna roles y administra los datos comerciales. |
 | Supervisor | Órdenes, avisos de corte, asignaciones, programación y verificación. |
 | Operario | Trabajos asignados, actividades, evidencias, materiales y actualización de estado. |
 | Cliente | Consulta de su propia información, servicio, deuda, facturas y avisos. |
