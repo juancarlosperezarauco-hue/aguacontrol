@@ -8,3 +8,6 @@
 !AquaControl/database/backups/AquaControlDev_20260922.bak
 TestResults/
 AquaControl/output/
+AquaControl/mobile/android/.gradle/
+AquaControl/mobile/android/local.properties
+AquaControl/mobile/android/**/build/
