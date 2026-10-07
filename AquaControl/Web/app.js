@@ -49,7 +49,7 @@ async function reportsPage(){const [d,inv]=await Promise.all([api('/reports/summ
 async function importsPage(){const d=await api('/geo-imports');$('#content').innerHTML=intro('Importaciones SIG','Trazabilidad y control de calidad de los archivos originales')+'<div class="notice">Las importaciones se ejecutan desde el comando administrativo documentado. Nunca se reemplazan capas existentes automáticamente.</div>'+card('Capas importadas',table(d.imports,[col('layer','Capa'),col('count','Aceptados'),col('rejected','Rechazados'),{label:'Fecha',render:r=>date(r.createdAt)},col('hash','SHA256')]))+card('Últimas incidencias (máximo 100)',table(d.issues,[col('importId','Importación'),col('ordinal','Fila original'),col('reason','Motivo')]));}
 async function mapPage(){
  await loadLookup();
- const [orders,quality]=await Promise.all([api('/orders'),can('geo.read')?api('/geo-summary'):Promise.resolve([])]);
+ const [orders,quality,notices,invoices]=await Promise.all([api('/orders'),can('geo.read')?api('/geo-summary'):Promise.resolve([]),api('/notices'),api('/invoices')]);
  const names={blocks:'Manzanas',lots:'Lotes',roads:'Vías',codes:'Código fijo'};
  const minZoom={blocks:0,roads:0,lots:16,codes:16};
  const layerLabels=Object.entries(names).filter(()=>can('geo.read')).map(([key,label])=>{
@@ -57,13 +57,28 @@ async function mapPage(){
   return `<label><input type="checkbox" data-layer="${key}" ${['blocks','roads'].includes(key)?'checked':''}>${label} · ${q?.count??0}</label>`;
  }).join('');
  const unlinked=quality.filter(x=>x.unlinked>0).map(x=>`${names[x.layer]}: ${x.unlinked} sin vínculo`).join(' · ');
+ const serviceStates={cortado:{label:'Servicio cortado',color:'#c53832'},pendienteCorte:{label:'Pendiente de corte',color:'#e87921'},conDeuda:{label:'Con saldo pendiente',color:'#c59a17'},alDia:{label:'Al día',color:'#1f9d55'},instalacionPendiente:{label:'Instalación pendiente',color:'#285ea8'}};
+ const meterUsers=lookup.contracts.filter(x=>!x.end).map(contract=>{
+  const connection=lookup.connections.find(x=>x.id===contract.connectionId);
+  const installation=lookup.installations.find(x=>x.connectionId===contract.connectionId&&!x.end);
+  const client=lookup.clients.find(x=>x.id===contract?.clientId);
+  const account=lookup.accounts.find(x=>x.id===contract?.accountId);
+  const meter=lookup.meters.find(x=>x.id===installation?.meterId);
+  const hasCutNotice=notices.some(x=>x.contractId===contract.id&&x.status==='VIGENTE');
+  const balance=invoices.filter(x=>x.contractId===contract.id).reduce((total,x)=>total+Number(x.balance??0),0);
+  const status=connection?.status?.toUpperCase();
+  const state=status==='CORTADA'?'cortado':hasCutNotice?'pendienteCorte':(!meter||['PENDIENTE','PENDIENTE_INSTALACION','EN_INSTALACION'].includes(status))?'instalacionPendiente':balance>0?'conDeuda':'alDia';
+  return {connection,client,account,meter,state,balance};
+ }).filter(x=>x.connection&&x.client);
  $('#content').innerHTML=intro('Territorio y servicio','Capas originales SIG y operación sobre el mapa')+`<div class="card map-layout"><div class="map-controls"><h3>Buscar en territorio</h3><label>Texto<input id="geo-search-text" minlength="2" placeholder="Código, lote, manzana o vía"></label><div class="map-search-layers">${Object.entries(names).map(([key,label])=>`<label><input type="checkbox" data-search-layer="${key}" checked>${label}</label>`).join('')}</div><button id="geo-search" class="btn secondary">Buscar</button><div id="geo-results" aria-live="polite"></div><h3>Referencias del entorno</h3><button id="poi-search" class="btn secondary">Lugares cercanos · OSM</button><p id="poi-status" class="tagline">Busca hasta 50 bancos, salud, educación y oficinas a 1 km del centro del mapa.</p><h3>Capas del territorio</h3>${layerLabels}<p class="tagline">Lotes y códigos fijos se muestran desde el zoom 16. Acerque el mapa para ver el detalle.</p><button id="map-fit" class="btn">Ver territorio</button><section id="sig-legend" class="map-legend" aria-live="polite"></section><h3>Operación</h3><small>● ${lookup.connections.length} conexiones<br>● ${orders.length} trabajos</small>${unlinked?`<p class="notice warning">${esc(unlinked)}. Requieren revisión catastral.</p>`:''}<p id="map-coordinates" class="tagline">Coordenadas: —</p><p id="map-status" role="status" class="tagline"></p><section id="map-detail" class="map-detail" aria-live="polite">Seleccione una entidad para ver sus atributos.</section></div><div id="map"></div></div>`;
+ const stateFilters=Object.entries(serviceStates).map(([key,state])=>`<label><input type="checkbox" data-meter-filter="${key}" checked><b style="color:${state.color}">●</b> ${state.label}</label>`).join('');
+ $('#map-fit').insertAdjacentHTML('beforebegin',`<h3>Usuarios y medidores</h3><label title="Muestra usuarios según la ubicación de su conexión"><input id="meter-user-layer" type="checkbox" checked>Mostrar usuarios · ${meterUsers.length}</label><div id="meter-user-filters" class="meter-user-filters">${stateFilters}</div>`);
  if(!window.L){$('#map').innerHTML='<div class="error">No se encontró Leaflet. Ejecute scripts/setup.ps1 para instalar los recursos.</div>';return;}
  const localMap=L.map('map',{maxBounds:[[-85,-180],[85,180]],minZoom:3}).setView([-16.382,-60.965],14);
  map=localMap;
  localMap.attributionControl.addAttribution('Cartografía SIG suministrada · WGS84');
  L.control.scale({imperial:false}).addTo(localMap);
- const layers={},colors={blocks:'#809f9d',lots:'#baa764',roads:'#6f95b0',codes:'#116d72'};let highlight,poiLayer;
+ const layers={},colors={blocks:'#809f9d',lots:'#baa764',roads:'#6f95b0',codes:'#116d72'};const meterUserLayer=L.layerGroup().addTo(localMap);let highlight,poiLayer;
  let controller=0,debounce;
  const territory=L.latLngBounds([]);
  quality.filter(x=>x.bounds).forEach(x=>{territory.extend([x.bounds[1],x.bounds[0]]);territory.extend([x.bounds[3],x.bounds[2]]);});
@@ -78,9 +93,24 @@ async function mapPage(){
   marker(x,'Conexión '+x.code+' · '+x.status+(client?' · Cliente: '+client.name:''),'#088879');
  });
  orders.forEach(x=>marker(x,x.number+' · '+x.status,'#c38735'));
+ function drawMeterUsers(){
+  meterUserLayer.clearLayers();
+  if(!$('#meter-user-layer').checked)return;
+  const selected=new Set([...document.querySelectorAll('[data-meter-filter]:checked')].map(x=>x.dataset.meterFilter));
+  meterUsers.forEach(item=>{
+   const x=item.connection;
+   if(!selected.has(item.state)||!Number.isFinite(x.latitude)||!Number.isFinite(x.longitude)||Math.abs(x.latitude)>90||Math.abs(x.longitude)>180)return;
+   const state=serviceStates[item.state];
+   const popup=`<strong>${esc(item.client.name)}</strong><br><small>Estado: ${esc(state.label)}<br>Abonado: ${esc(item.account?.number??'sin cuenta')}<br>Conexión: ${esc(x.code)} · ${esc(x.status)}<br>Saldo: Bs ${money(item.balance)}<br>Medidor: ${item.meter?`${esc(item.meter.serial)}${item.meter.model?` · ${esc(item.meter.model)}`:''}`:'pendiente de instalación'}</small>`;
+   L.circleMarker([x.latitude,x.longitude],{radius:8,color:'#fff',weight:2,fillColor:state.color,fillOpacity:1}).addTo(meterUserLayer).bindPopup(popup);
+  });
+ }
+ drawMeterUsers();
+ $('#meter-user-layer').onchange=()=>{drawMeterUsers();updateLegend();};
+ document.querySelectorAll('[data-meter-filter]').forEach(input=>input.onchange=()=>{drawMeterUsers();updateLegend();});
  function fit(){if(territory.isValid())localMap.fitBounds(territory,{padding:[15,15],maxZoom:17});}
  $('#map-fit').onclick=fit;fit();
- function updateLegend(){const visible=[...document.querySelectorAll('[data-layer]:checked')].map(i=>i.dataset.layer);$('#sig-legend').innerHTML='<h3>Leyenda visible</h3>'+(visible.length?visible.map(key=>`<p><b style="color:${colors[key]}">●</b> ${names[key]}</p>`).join(''):'<p>Sin capas SIG activas.</p>')+'<small>La leyenda cambia según las capas activas.</small>';}
+ function updateLegend(){const visible=[...document.querySelectorAll('[data-layer]:checked')].map(i=>i.dataset.layer);const sig=visible.length?visible.map(key=>`<p><b style="color:${colors[key]}">●</b> ${names[key]}</p>`).join(''):'<p>Sin capas SIG activas.</p>';const selected=new Set([...document.querySelectorAll('[data-meter-filter]:checked')].map(x=>x.dataset.meterFilter));const users=$('#meter-user-layer')?.checked?Object.entries(serviceStates).filter(([key])=>selected.has(key)).map(([key,state])=>`<p><b style="color:${state.color}">●</b> ${state.label}: ${meterUsers.filter(x=>x.state===key).length}</p>`).join(''):'';$('#sig-legend').innerHTML='<h3>Leyenda visible</h3>'+sig+users+'<small>La leyenda cambia según las capas activas.</small>';}
  async function identify(key,id,zoom=true){try{const feature=await api(`/geo/${key}/${id}`);const properties=feature.properties??{};const attrs=Object.entries(properties).filter(([name,value])=>name!=='attributes'&&value!=null).map(([name,value])=>`<dt>${esc(name)}</dt><dd>${esc(value)}</dd>`).join('');const source=Object.entries(properties.attributes??{}).map(([name,value])=>`<dt>${esc(name)}</dt><dd>${esc(value)}</dd>`).join('');$('#map-detail').innerHTML=`<h3>${esc(names[key]??key)} · ${esc(properties.label??id)}</h3><dl>${attrs}</dl>${source?`<details><summary>Atributos originales</summary><dl>${source}</dl></details>`:''}`;if(highlight)localMap.removeLayer(highlight);if(feature.geometry){highlight=L.geoJSON(feature,{style:{color:'#d05237',weight:4,fillOpacity:.12},pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:9,color:'#d05237',weight:3,fillOpacity:.35})}).addTo(localMap);const bounds=highlight.getBounds();if(zoom&&bounds.isValid())localMap.fitBounds(bounds,{padding:[30,30],maxZoom:18});}}catch(err){$('#map-detail').innerHTML='<div class="error">'+esc(err.message)+'</div>';}}
  async function searchGeo(page=1){const text=$('#geo-search-text').value.trim();if(text.length<2){$('#geo-results').innerHTML='<p class="tagline">Escriba al menos dos caracteres.</p>';return;}const selected=[...document.querySelectorAll('[data-search-layer]:checked')].map(x=>x.dataset.searchLayer);if(!selected.length){$('#geo-results').innerHTML='<p class="tagline">Seleccione al menos una capa.</p>';return;}const result=await api('/geo/search?text='+encodeURIComponent(text)+'&layers='+encodeURIComponent(selected.join(','))+'&page='+page+'&pageSize=10');const rows=result.items;$('#geo-results').innerHTML='<p class="tagline">'+result.total+' resultado(s)</p>'+table(rows,[{label:'Entidad',render:r=>esc(names[r.layer]+' · '+r.label)},{label:'Detalle',render:r=>esc(r.detail)},{label:'',render:r=>act('Ver',()=>identify(r.layer,r.id),'secondary')}])+(result.total>10?`<div class="pager"><button class="secondary" ${page===1?'disabled':''} id="geo-prev">Anterior</button><span>Página ${page}</span><button class="secondary" ${page*10>=result.total?'disabled':''} id="geo-next">Siguiente</button></div>`:'');$('#geo-prev')&&( $('#geo-prev').onclick=()=>searchGeo(page-1));$('#geo-next')&&( $('#geo-next').onclick=()=>searchGeo(page+1));}
  async function places(){const center=localMap.getCenter(),status=$('#poi-status');status.textContent='Consultando lugares cercanos…';try{const data=await api('/geo/places?lat='+encodeURIComponent(center.lat)+'&lon='+encodeURIComponent(center.lng)+'&radius=1000');if(poiLayer)localMap.removeLayer(poiLayer);poiLayer=L.geoJSON(data,{pointToLayer:(feature,ll)=>L.circleMarker(ll,{radius:6,color:'#6a4c93',weight:2,fillColor:'#b697dc',fillOpacity:.8}),onEachFeature:(feature,l)=>{const p=feature.properties??{};l.bindPopup('<strong>'+esc(p.name||'Lugar de interés')+'</strong><br><small>'+esc(p.kinds||'Referencia')+'</small>');}}).addTo(localMap);status.textContent=(data.features?.length??0)+' lugar(es) de interés mostrados alrededor del centro.';}catch(err){status.textContent=err.message;}}
