@@ -20,6 +20,8 @@ Desde la carpeta del proyecto original:
 
 Abrir `http://localhost:5080`. Las credenciales iniciales locales están en `AquaControl/.local/acceso-inicial.txt`, excluido del repositorio. No lo publique ni lo incluya en entregas compartidas.
 
+Para usar el sistema, consulte el [Manual de usuario](docs/10_Manual_Usuario.md).
+
 El SQL Server local debe estar encendido. Las bases son distintas:
 
 | Base | Uso |
