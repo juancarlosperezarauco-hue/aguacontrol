@@ -31,6 +31,22 @@ public static class Api {
    types=a.Can("orders.read")?await db.Set<WorkType>().OrderBy(x=>x.Name).ToListAsync():[],
    materials=a.Can("orders.read")?await db.Set<Material>().Where(x=>x.Active).OrderBy(x=>x.Name).ToListAsync():[],
    users=a.Can("orders.read")?await db.Set<User>().Where(x=>x.Active).Select(x=>new{x.Id,x.Name}).ToListAsync():null};});
+  api.MapGet("/map/service-points",async(HttpContext c,AquaService s,AquaDb db)=>{
+   var a=await Actor(c,s);a.Require("geo.read");
+   var rows=await (from contract in s.Contracts(a)
+                   where contract.End==null
+                   join client in db.Set<Client>() on contract.ClientId equals client.Id
+                   join account in db.Set<Account>() on contract.AccountId equals account.Id
+                   join connection in db.Set<Connection>() on contract.ConnectionId equals connection.Id
+                   select new {contract,client,account,connection}).AsNoTracking().ToListAsync();
+   var connectionIds=rows.Select(x=>x.connection.Id).ToList();
+   var installations=await db.Set<MeterInstallation>().AsNoTracking().Where(x=>connectionIds.Contains(x.ConnectionId)&&x.End==null).ToDictionaryAsync(x=>x.ConnectionId);
+   var meterIds=installations.Values.Select(x=>x.MeterId).ToList();
+   var meters=await db.Set<Meter>().AsNoTracking().Where(x=>meterIds.Contains(x.Id)).ToDictionaryAsync(x=>x.Id);
+   return rows.Select(x=>new {x.contract,x.client,x.account,x.connection,
+     installation=installations.TryGetValue(x.connection.Id,out var installation)?installation:null,
+     meter=installations.TryGetValue(x.connection.Id,out var current)&&meters.TryGetValue(current.MeterId,out var meter)?meter:null});
+  });
   api.MapPost("/contracts",async(NewContract r,HttpContext c,AquaService s)=>await s.CreateContract(await Actor(c,s),r));
   api.MapPost("/contracts/{id:int}/close",async(int id,VersionRequest r,HttpContext c,AquaService s)=>{await s.CloseContract(await Actor(c,s),id,r.Version);return Results.Ok();});
   api.MapPost("/installations",async(InstallRequest r,HttpContext c,AquaService s)=>await s.InstallMeter(await Actor(c,s),r.ConnectionId,r.MeterId,r.Initial,r.Final));

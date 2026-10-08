@@ -4,7 +4,7 @@ Aplicación web de gestión de agua con ASP.NET Core, EF Core, SQL Server Spatia
 
 ## Estado de esta entrega
 
-Los módulos contienen persistencia real y API; no hay clientes reales inventados. La base `AquaControlDev` conserva el padrón comercial vacío para introducir datos autorizados. Los Shapefiles originales se importan con procedencia. Las pruebas usan exclusivamente `AquaControlTests` y nombres FICTICIO/TEST.
+Los módulos contienen persistencia real y API. La base `AquaControlDev` contiene el padrón SIG autorizado: cada Código Fijo con titular y geometría válida está vinculado a un cliente, abonado, conexión y contrato. Los Shapefiles originales se importan con procedencia. La fuente SIG no incluye series de medidor ni tarifas oficiales, por lo que ambos se registran después mediante el flujo operativo correspondiente. Las pruebas usan exclusivamente `AquaControlTests` y nombres FICTICIO/TEST.
 
 Esta entrega es netamente operativa: no ofrece QR, tarjeta ni cobro en línea. Las facturas y saldos sirven para el control administrativo y los avisos de corte se resuelven mediante una decisión registrada del supervisor.
 
@@ -29,6 +29,8 @@ El SQL Server local debe estar encendido. Las bases son distintas:
 | VisorDatosSIG | Original preservada; no es el destino de inicialización |
 | AquaControlDev | Aplicación y cartografía de desarrollo |
 | AquaControlTests | Pruebas automatizadas y datos ficticios |
+
+La carga del padrón se documenta en [database/12_Poblar_Padron_Clientes_Desde_SIG.sql](database/12_Poblar_Padron_Clientes_Desde_SIG.sql). Crea respaldos de las demostraciones anteriores, no borra información y conserva los equipos de medición como pendientes de registro cuando su serie no existe en la fuente.
 
 ## Instalar en otro equipo
 
