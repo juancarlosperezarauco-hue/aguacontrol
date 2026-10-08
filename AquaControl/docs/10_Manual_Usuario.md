@@ -19,7 +19,11 @@ Cada perfil ve solamente las opciones autorizadas para su trabajo.
 
 Al ingresar se abre el **Mapa operativo**. Esta pantalla concentra la operación diaria.
 
-### Qué muestra
+### Inicio optimizado
+
+El mapa inicia sin puntos operativos ni capas SIG cargadas. Esto evita descargar el padrón completo y mantiene una navegación fluida. Primero busque el servicio requerido; el mapa mostrará solamente los resultados encontrados.
+
+### Qué puede mostrar
 
 - Límites y capas SIG: manzanas, lotes, vías y códigos fijos.
 - Usuarios, conexiones y medidores georreferenciados.
@@ -39,10 +43,12 @@ Al ingresar se abre el **Mapa operativo**. Esta pantalla concentra la operación
 
 ### Consultar un usuario desde el mapa
 
-1. Acerque el mapa si los puntos están agrupados.
-2. Pulse un punto de usuario o medidor.
-3. En **Servicio seleccionado** aparecerán el cliente, abonado, código de conexión, medidor, saldo y dirección.
-4. Use los botones de la ficha según los permisos de su perfil:
+1. En **Buscar servicio**, escriba al menos dos caracteres del titular, Código Fijo, abonado o conexión.
+2. Pulse **Buscar en mapa**.
+3. Si existe un único resultado, el mapa se centra automáticamente. Si hay varios, pulse **Ver** sobre el servicio requerido.
+4. Pulse el punto de usuario o medidor.
+5. En **Servicio seleccionado** aparecerán el cliente, abonado, código de conexión, medidor, saldo y dirección.
+6. Use los botones de la ficha según los permisos de su perfil:
    - **Crear orden**: abre una orden ya vinculada a la conexión y coordenadas del punto.
    - **Registrar lectura**: registra la lectura del medidor seleccionado.
    - **Emitir aviso**: genera un aviso de corte para el contrato activo.
@@ -53,10 +59,10 @@ Al ingresar se abre el **Mapa operativo**. Esta pantalla concentra la operación
 En el panel izquierdo del mapa puede:
 
 - Activar o desactivar las capas de manzanas, lotes, vías y códigos fijos.
-- Filtrar los usuarios por **estado de servicio**, condición de medidor y cliente/abonado.
+- Filtrar los resultados encontrados por **estado de servicio** y condición de medidor.
 - Buscar un código fijo, lote, manzana o vía mediante el cuadro **Buscar en territorio**.
 - Usar **Ver territorio** para regresar a la extensión general de las capas.
-- Cambiar la cartografía base con el selector del mapa: calles, vista clara, vista oscura, satélite o topográfico.
+- Cambiar la cartografía base con el selector del mapa: **sin fondo**, vista clara, vista oscura, satélite o topográfico.
 
 Los lotes y códigos fijos se muestran al acercar el zoom para evitar sobrecargar la pantalla.
 

@@ -33,19 +33,26 @@ public static class Api {
    users=a.Can("orders.read")?await db.Set<User>().Where(x=>x.Active).Select(x=>new{x.Id,x.Name}).ToListAsync():null};});
   api.MapGet("/map/service-points",async(HttpContext c,AquaService s,AquaDb db)=>{
    var a=await Actor(c,s);a.Require("geo.read");
+   var term=c.Request.Query["query"].ToString().Trim();
+   if(term.Length<2)return Results.Ok(Array.Empty<object>());
+   var numeric=int.TryParse(term,out var code);
    var rows=await (from contract in s.Contracts(a)
                    where contract.End==null
                    join client in db.Set<Client>() on contract.ClientId equals client.Id
                    join account in db.Set<Account>() on contract.AccountId equals account.Id
                    join connection in db.Set<Connection>() on contract.ConnectionId equals connection.Id
-                   select new {contract,client,account,connection}).AsNoTracking().ToListAsync();
+                   join fixedCode in db.Set<FixedCode>() on connection.FixedCodeId equals fixedCode.Id into fixedCodes
+                   from fixedCode in fixedCodes.DefaultIfEmpty()
+                   where client.Name.Contains(term)||client.Document.Contains(term)||account.Number.Contains(term)||connection.Code.Contains(term)||(numeric&&fixedCode!=null&&(fixedCode.CodFijo==code||fixedCode.CodF_SQL==code))
+                   orderby client.Name
+                   select new {contract,client,account,connection}).AsNoTracking().Take(50).ToListAsync();
    var connectionIds=rows.Select(x=>x.connection.Id).ToList();
    var installations=await db.Set<MeterInstallation>().AsNoTracking().Where(x=>connectionIds.Contains(x.ConnectionId)&&x.End==null).ToDictionaryAsync(x=>x.ConnectionId);
    var meterIds=installations.Values.Select(x=>x.MeterId).ToList();
    var meters=await db.Set<Meter>().AsNoTracking().Where(x=>meterIds.Contains(x.Id)).ToDictionaryAsync(x=>x.Id);
-   return rows.Select(x=>new {x.contract,x.client,x.account,x.connection,
+   return Results.Ok(rows.Select(x=>new {x.contract,x.client,x.account,x.connection,
      installation=installations.TryGetValue(x.connection.Id,out var installation)?installation:null,
-     meter=installations.TryGetValue(x.connection.Id,out var current)&&meters.TryGetValue(current.MeterId,out var meter)?meter:null});
+     meter=installations.TryGetValue(x.connection.Id,out var current)&&meters.TryGetValue(current.MeterId,out var meter)?meter:null}));
   });
   api.MapPost("/contracts",async(NewContract r,HttpContext c,AquaService s)=>await s.CreateContract(await Actor(c,s),r));
   api.MapPost("/contracts/{id:int}/close",async(int id,VersionRequest r,HttpContext c,AquaService s)=>{await s.CloseContract(await Actor(c,s),id,r.Version);return Results.Ok();});
