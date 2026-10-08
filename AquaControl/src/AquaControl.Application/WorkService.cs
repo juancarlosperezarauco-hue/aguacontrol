@@ -17,6 +17,7 @@ public partial class AquaService {
  public async Task<WorkOrder> CreateOrder(Actor a,NewOrder r){
   r=r with {ScheduledAt=r.ScheduledAt.ToUniversalTime()};a.Require("orders.manage");using var tx=await db.Database.BeginTransactionAsync(IsolationLevel.Serializable);var type=await Get<WorkType>(r.WorkTypeId);Require(type.Active,"Tipo inactivo.");Require(r.Priority is "BAJA" or "NORMAL" or "ALTA" or "URGENTE","Prioridad inválida.");Require(!string.IsNullOrWhiteSpace(r.Instructions),"Instrucciones obligatorias.");Require(r.ScheduledAt>=DateTime.UtcNow.Date,"Fecha inválida.");Require((await Permissions(r.SupervisorId)).Contains("orders.manage")&&(await Get<User>(r.SupervisorId)).Active,"Supervisor no autorizado.");
   Connection? c=r.ConnectionId.HasValue?await Get<Connection>(r.ConnectionId.Value):null;
+  if(!r.ContractId.HasValue&&r.ConnectionId.HasValue)r=r with{ContractId=await db.Set<Contract>().Where(x=>x.ConnectionId==r.ConnectionId.Value&&x.End==null).Select(x=>(int?)x.Id).SingleOrDefaultAsync()};
   if(r.ContractId.HasValue){var contract=await Get<Contract>(r.ContractId.Value);Require(contract.ConnectionId==r.ConnectionId,"Contrato y conexión no coinciden.");}
   if(type.Effect is "CORTE" or "RECONEXION")Require(c!=null,"El trabajo requiere conexión.");
   CutNotice? notice=null;if(type.Effect=="CORTE"){
