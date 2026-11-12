@@ -2,7 +2,7 @@
 
 ## 1. Propósito
 
-AquaControl administra el servicio de agua potable desde una vista territorial. El **Mapa operativo** es la pantalla principal: cada punto representa una conexión de un abonado y permite conocer su estado, medidor, saldo, ubicación y trabajos asociados.
+AquaControl administra el servicio de agua potable desde una vista territorial. **Capas y búsqueda SIG** es la pantalla principal y reúne el mapa operativo y la consulta geográfica: cada punto representa una conexión de un abonado y permite conocer su estado, medidor, saldo, ubicación y trabajos asociados.
 
 El sistema guarda los cambios en la base de datos y registra las acciones relevantes en la bitácora.
 
@@ -15,9 +15,17 @@ El sistema guarda los cambios en la base de datos y registra las acciones releva
 
 Cada perfil ve solamente las opciones autorizadas para su trabajo.
 
-## 3. Pantalla principal: Mapa operativo
+### Aplicación Android de campo
 
-Al ingresar se abre el **Mapa operativo**. Esta pantalla concentra la operación diaria.
+La APK utiliza el mismo usuario y contraseña. El operario entra a sus trabajos y puntos; el supervisor, administrador o dueño entra al mapa de monitoreo. Durante la jornada iniciada voluntariamente desde el teléfono se transmite GPS y la supervisión consulta actualizaciones cada 10 segundos. Al finalizar se detiene el envío. Una posición antigua se identifica como sin señal, no como ubicación en vivo.
+
+Para finalizar un trabajo se debe subir una fotografía del servicio y del medidor actual, además de completar las actividades y los efectos físicos que correspondan. La serie se conserva en la evidencia para su revisión desde el detalle de la orden. Consulte la [guía de Android](../mobile/android/README.md) para instalar, configurar la dirección del servidor y probar cámara/GPS.
+
+## 3. Pantalla principal: Capas y búsqueda SIG
+
+Al ingresar se abre **Capas y búsqueda SIG**. Esta pantalla concentra la operación diaria, las rutas de trabajo, la consulta de atributos y las capas del territorio. La entrada independiente «Mapa operativo» fue unificada aquí; sus enlaces anteriores también abren esta pantalla.
+
+Los buscadores de servicios y territorio están encima del mapa, con los campos y botones organizados verticalmente. Debajo del mapa se encuentran el detalle del servicio seleccionado, las capas, los filtros y las herramientas de rutas. Las acciones de lecturas, órdenes y avisos dependen de los permisos del usuario.
 
 ### Inicio optimizado
 
@@ -124,10 +132,10 @@ También se puede crear una orden general desde **Órdenes de trabajo**.
 
 ### Planificar la ruta del operario
 
-1. El **Administrador** crea la cuenta del operario y le asigna el rol **OPERARIO** desde **Configuración avanzada → Usuarios y permisos**.
+1. El **Administrador** crea la cuenta y le asigna **OPERARIO LECTURAS Y FACTURACION** o **OPERARIO TECNICO**, según su función, desde **Configuración avanzada → Usuarios y permisos**.
 2. El supervisor crea las órdenes de lectura, instalación, mantenimiento, reparación o corte para los puntos del mapa.
 3. En cada orden, pulse **Asignar** y elija el operario responsable.
-4. Regrese al **Mapa operativo** y, en **Ruta de trabajo**, seleccione el operario y, si corresponde, la fecha programada.
+4. Regrese a **Capas y búsqueda SIG** y, en **Ruta de trabajo**, seleccione el operario y, si corresponde, la fecha programada.
 5. Pulse **Trazar ruta**. El sistema dibuja puntos numerados y una línea de recorrido sugerida por cercanía entre las órdenes asignadas.
 6. Pulse el número de una parada para abrir la orden y registrar la visita, actividades, lectura, materiales, evidencias y estado de ejecución.
 
@@ -173,13 +181,13 @@ Al resolver un aviso, registre siempre el motivo administrativo. La orden de cor
 
 | Perfil | Responsabilidad habitual |
 |---|---|
-| Super administrador | Usuarios, roles, permisos, configuración y auditoría global. |
-| Administrador | Crea las cuentas de administradores, supervisores, operarios y clientes; asigna roles y administra los datos comerciales. |
+| Super administrador | Dueño del sistema, control total y administración de otros dueños. |
+| Administrador | Acceso general, creación de usuarios y roles administrativos adicionales. No modifica la cuenta del dueño. |
 | Supervisor | Órdenes, avisos de corte, asignaciones, programación y verificación. |
-| Operario | Trabajos asignados, actividades, evidencias, materiales y actualización de estado. |
-| Cliente | Consulta de su propia información, servicio, deuda, facturas y avisos. |
+| Operario de lecturas y facturación | Registra consumos y emite recibos de sus lecturas en trabajos asignados en ejecución. |
+| Operario técnico | Instala, corta, reconecta y mantiene servicios; registra actividades, evidencias y materiales. |
 
-Las opciones visibles pueden variar por los permisos concretos asignados a la cuenta.
+Los cinco roles base son fijos. El administrador puede crear perfiles administrativos adicionales. Los roles genéricos anteriores y los heredados están archivados. Consulte [Jerarquía de roles](12_Jerarquia_Roles.md) para la actualización y recuperación de permisos.
 
 ## 11. Recomendaciones de operación
 

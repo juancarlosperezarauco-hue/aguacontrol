@@ -22,7 +22,7 @@ function aqua3dLines(geometry) {
 async function openAqua3d() {
   if (!map || !window.THREE) { toast('El componente de modelo 3D no está disponible. Ejecute scripts/setup.ps1 y recargue la página.',true); return; }
   aqua3dStop?.();
-  modal('Modelo 3D del territorio',`<div class="sig-3d"><canvas id="sig-3d-canvas" aria-label="Modelo 3D del territorio"></canvas><section class="sig-3d-panel"><strong>Vista territorial 3D</strong><p>Manzanas, vías y conexiones de la extensión visible. Arrastre para rotar y use la rueda para acercar.</p><p>La extrusión es uniforme y facilita la lectura de las capas; no representa elevación ni altura real de edificios.</p><button id="sig-3d-reset" class="secondary">Restablecer vista</button></section><span id="sig-3d-status" class="sig-3d-status">Cargando capas SIG…</span></div>`);
+  modal('Modelo 3D del territorio',`<div class="sig-3d"><canvas id="sig-3d-canvas" aria-label="Modelo 3D del territorio"></canvas><section class="sig-3d-panel"><strong>Vista territorial 3D</strong><p>Manzanas, vías y conexiones de la extensión visible. Arrastre para rotar y use la rueda para acercar.</p><p>La extrusión es uniforme y facilita la lectura de las capas; no representa elevación ni altura real de edificios.</p><button id="sig-3d-top" class="secondary">Vista superior</button><button id="sig-3d-reset" class="secondary">Restablecer vista</button></section><span id="sig-3d-status" class="sig-3d-status">Cargando capas SIG…</span></div>`);
   const canvas=$('#sig-3d-canvas'),status=$('#sig-3d-status'),dialog=$('#dialog');
   try {
     const query=aqua3dBounds();
@@ -74,9 +74,10 @@ async function openAqua3d() {
     }
     const markerGeometry=new THREE.SphereGeometry(15,12,10),connectionMaterial=new THREE.MeshStandardMaterial({color:'#62e0c7',emissive:'#0d7568',emissiveIntensity:.5});
     let connectionCount=0;
-    for (const connection of lookup.connections||[]) {
+    for (const item of window.aquaVisibleServices||[]) {
+      const connection=item.connection;
       if (!Number.isFinite(connection.longitude)||!Number.isFinite(connection.latitude)||!map.getBounds().contains([connection.latitude,connection.longitude])) continue;
-      const p=point([connection.longitude,connection.latitude]),marker=new THREE.Mesh(markerGeometry,connectionMaterial); marker.position.set(p.x,p.y,42); territory.add(marker); connectionCount++;
+      const p=point([connection.longitude,connection.latitude]),marker=new THREE.Mesh(markerGeometry,new THREE.MeshStandardMaterial({color:({cortado:'#c53832',pendienteCorte:'#e87921',alDia:'#1f9d55',bajaParcial:'#956338',baja:'#202830',instalacionPendiente:'#285ea8',conDeuda:'#c59a17'})[item.state]??'#62e0c7'})); marker.position.set(p.x,p.y,42); territory.add(marker); connectionCount++;
     }
     if (!blockCount) throw Error('No hay manzanas en la extensión visible. Use “Ver territorio” y vuelva a abrir el modelo 3D.');
     const box=new THREE.Box3().setFromObject(blocksGroup),boxCenter=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3()),span=Math.max(size.x,size.y,800);
@@ -94,7 +95,7 @@ async function openAqua3d() {
     const up=()=>{dragging=false;};
     const wheel=event=>{event.preventDefault();const factor=event.deltaY>0?1.12:.89;camera.position.multiplyScalar(factor);camera.position.z=Math.max(span*.32,Math.min(span*2.6,camera.position.z));camera.position.y=Math.max(-span*2.6,Math.min(-span*.32,camera.position.y));};
     canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('wheel',wheel,{passive:false});
-    $('#sig-3d-reset').onclick=reset;
+    $('#sig-3d-reset').onclick=reset;$('#sig-3d-top').onclick=()=>{territory.rotation.set(0,0,0);camera.position.set(0,0,span*1.2);camera.up.set(0,1,0);camera.lookAt(0,0,0);};
     status.textContent=`${blockCount} manzanas · ${roads.features.length} vías · ${connectionCount} conexiones`;
     aqua3dStop=()=>{cancelAnimationFrame(frame);observer.disconnect();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);canvas.removeEventListener('wheel',wheel);renderer.dispose();aqua3dStop=null;};
     dialog.addEventListener('close',aqua3dStop,{once:true});

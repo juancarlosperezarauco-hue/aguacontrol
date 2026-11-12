@@ -1,0 +1,72 @@
+'use strict';
+const operationalStates={NORMAL:['Normal / activo','#1f9d55'],PENDIENTE_CORTE:['Para corte','#e87921'],CORTADA:['Cortado','#c53832'],BAJA_PARCIAL:['Baja parcial','#956338'],BAJA_TOTAL:['Baja total','#202830'],PENDIENTE_INSTALACION:['Instalación pendiente','#285ea8']};
+async function operationalDashboardPage(){
+ const d=await api('/dashboard/operational');
+ $('#content').innerHTML=intro('Dashboard general','Estado real de las conexiones y del trabajo de campo',act('Actualizar',operationalDashboardPage,'secondary'))+
+ `<div class="scope-metrics"><article class="scope-metric"><small>Total de conexiones</small><strong>${d.total.toLocaleString('es-BO')}</strong></article>${d.states.map(s=>`<article class="scope-metric"><small><i style="background:${operationalStates[s.state]?.[1]}"></i>${esc(operationalStates[s.state]?.[0]??s.state)}</small><strong>${s.count.toLocaleString('es-BO')}</strong><span>${d.total?(100*s.count/d.total).toFixed(1):0}% del total</span></article>`).join('')}</div>`+
+ card('Distribución de servicios',`<div class="card-body scope-bars">${d.states.map(s=>`<div><span>${esc(operationalStates[s.state]?.[0]??s.state)}</span><meter min="0" max="${Math.max(1,d.total)}" value="${s.count}">${s.count}</meter><strong>${s.count}</strong></div>`).join('')}</div>`)+
+ card('Operación de campo',`<div class="card-body"><p>${d.routes} rutas activas · ${d.activeShifts} jornadas abiertas · ${d.visitsToday} visitas de hoy (UTC).</p><p>Una jornada abierta puede no tener señal reciente. Consulte Monitoreo para ver la última actualización.</p><a class="btn primary" href="#assignments">Planificar trabajos</a> <a class="btn secondary" href="#monitor">Monitorear operarios</a></div>`)+card('Órdenes por estado',table(d.orders,[{label:'Estado',render:r=>badge(r.state)},col('count','Cantidad')]));
+}
+function scopeBaseMap(id){
+ const instance=L.map(id).setView([-16.38,-60.96],14);map=instance;instance._aquaBaseStyles=true;
+ const tiles=(service)=>L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/'+service+'/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri',maxZoom:19});
+ const bases={'Sin fondo':L.layerGroup(),'Calles':tiles('World_Street_Map'),'Satélite':tiles('World_Imagery'),'Topográfico':tiles('World_Topo_Map')};bases.Calles.addTo(instance);L.control.layers(bases,{}, {collapsed:true}).addTo(instance);L.control.scale({imperial:false}).addTo(instance);
+ return instance;
+}
+async function assignmentsPage(){
+ await loadLookup();
+ $('#content').innerHTML=intro('Asignaciones y rutas','Seleccione la especialidad, revise los pendientes y marque el punto de partida.')+
+ `<div class="scope-planning"><section class="card"><form id="route-form" class="card-body scope-form"><label>Tipo de recorrido<select id="plan-kind"><option value="CORTE">Cortes · operario técnico</option><option value="RECONEXION">Reconexiones · operario técnico</option><option value="LECTURA">Lecturas · operario de lecturas</option></select></label><label>Operario<select id="plan-operator" required><option value="">Seleccionar operario…</option></select></label><div id="plan-pending" class="notice" aria-live="polite">Seleccione un operario para ver sus pendientes.</div><label>Órdenes adicionales a asignar<input id="plan-count" type="number" min="0" max="50" value="10" required></label><label>Traslado<select id="plan-mode"><option value="VEHICULO">Vehículo</option><option value="MOTO">Moto</option><option value="A_PIE">A pie</option></select></label><p id="plan-origin" class="notice">Pulse el mapa para marcar el punto de partida.</p><button class="primary" type="submit">Calcular ruta por vías</button><button class="secondary" type="button" id="plan-save" disabled>Guardar asignación</button><p id="plan-status" role="status"></p><p class="tagline">Trabaja con órdenes existentes. Cree primero las órdenes; los cortes conservan la validación de aviso y deuda. Máximo 50 paradas por ruta.</p></form></section><section class="card scope-map-card"><div id="map" class="scope-map"></div></section></div><section id="plan-result"></section>`;
+ const localMap=scopeBaseMap('map'),routeLayer=L.layerGroup().addTo(localMap);let origin,originMarker,preview;
+ const invalidate=()=>{preview=null;$('#plan-save').disabled=true;$('#plan-result').innerHTML='';routeLayer.clearLayers();};
+ const populate=()=>{invalidate();const reader=$('#plan-kind').value==='LECTURA';$('#plan-operator').innerHTML='<option value="">Seleccionar operario…</option>'+(lookup.users??[]).filter(u=>reader?u.reader:u.technician).map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('');$('#plan-pending').textContent='Seleccione un operario para ver sus pendientes.';};
+ const pending=async()=>{invalidate();if(!$('#plan-operator').value)return;try{const d=await api('/routes/options?operatorId='+$('#plan-operator').value+'&kind='+$('#plan-kind').value);$('#plan-pending').textContent=`${d.pending.length} pendientes del operario · ${d.available} órdenes adicionales disponibles`;}catch(e){$('#plan-pending').textContent=e.message;}};
+ populate();$('#plan-kind').onchange=populate;$('#plan-operator').onchange=pending;$('#plan-count').oninput=invalidate;$('#plan-mode').onchange=invalidate;
+ localMap.on('click',e=>{origin=e.latlng;invalidate();if(originMarker)originMarker.setLatLng(origin);else originMarker=L.marker(origin).addTo(localMap).bindPopup('Punto de partida');$('#plan-origin').textContent=`Inicio: ${origin.lat.toFixed(6)}, ${origin.lng.toFixed(6)}`;});
+ $('#route-form').onsubmit=async e=>{
+  e.preventDefault();if(!origin){$('#plan-status').textContent='Marque primero el punto de partida en el mapa.';return;}
+  const button=e.submitter;button.disabled=true;invalidate();$('#plan-status').textContent='Calculando Dijkstra sobre las vías SIG…';
+  try{
+   const request={operatorId:Number($('#plan-operator').value),kind:$('#plan-kind').value,additionalCount:Number($('#plan-count').value),startLatitude:origin.lat,startLongitude:origin.lng,travelMode:$('#plan-mode').value};
+   const result=await api('/routes/preview','POST',request);if(map!==localMap)return;preview=result;
+   const path=result.network.path.map(p=>[p[1],p[0]]);if(path.length>1)L.polyline(path,{color:'#335de5',weight:5}).addTo(routeLayer);
+   result.network.stops.forEach(s=>{
+    const order=result.orders.find(o=>o.id===s.orderId);L.marker([s.latitude,s.longitude],{icon:L.divIcon({className:'route-stop',html:String(s.sequence),iconSize:[28,28],iconAnchor:[14,14]})}).addTo(routeLayer).bindPopup(`<strong>${s.sequence}. ${esc(order?.client)}</strong><br>${esc(order?.number)}`);
+   });
+   const bounds=L.latLngBounds(path.concat(result.network.stops.map(s=>[s.latitude,s.longitude])));if(bounds.isValid())localMap.fitBounds(bounds,{padding:[35,35],maxZoom:17});
+   $('#plan-status').textContent=`${result.orders.length} paradas · ${(result.network.distanceMeters/1000).toFixed(2)} km por vías. Revise y guarde la asignación.`;
+   $('#plan-result').innerHTML=card('Recorrido calculado',`<div class="card-body">${result.network.warnings.map(w=>`<p class="notice">${esc(w)}</p>`).join('')}</div>`+table(result.orders,[col('sequence','Parada'),col('client','Cliente'),col('number','Orden'),{label:'Tramo vial',render:r=>Math.round(r.distanceMeters)+' m'},{label:'Acceso al medidor',render:r=>Math.round(r.accessMeters)+' m'},{label:'Estado',render:r=>badge(r.status)}]));$('#plan-save').disabled=false;
+  }catch(error){$('#plan-status').textContent=error.message;}finally{button.disabled=false;}
+ };
+ $('#plan-save').onclick=async()=>{if(!preview)return;$('#plan-save').disabled=true;try{const saved=await api('/routes','POST',{plan:preview.request,previewHash:preview.previewHash});$('#plan-status').textContent=`Asignación #${saved.id} guardada. El operario verá la ruta al actualizar sus trabajos en la APK.`;preview=null;toast('Ruta y asignaciones guardadas en SQL Server.');}catch(e){$('#plan-status').textContent=e.message;preview=null;}};
+}
+async function monitoringPage(){
+ if(!can('field.monitor'))throw Error('Perfil sin permiso de monitoreo.');
+ $('#content').innerHTML=intro('Monitoreo de campo','Posiciones recientes durante la jornada e historial real de GPS y visitas.')+`<section class="card"><div id="map" class="scope-map"></div></section>`+
+ card('Historial de recorrido',`<form id="history-form" class="card-body scope-history"><label>Operario<select id="history-operator" required><option value="">Seleccionar…</option></select></label><label>Fecha (UTC)<input type="date" id="history-date" value="${new Date().toISOString().slice(0,10)}" required></label><button class="secondary">Consultar recorrido</button></form><div class="card-body"><p id="history-status" role="status">Se conservan posiciones recibidas durante la jornada; no se inventan trayectos entre envíos.</p><label>Reproducir posiciones<input id="history-step" type="range" min="0" max="0" value="0" disabled></label><div id="history-visits"></div></div>`);
+ const localMap=scopeBaseMap('map'),layer=L.layerGroup().addTo(localMap);let points=[],cursor;
+ const positions=await api('/field/positions');if(map!==localMap)return;
+ $('#history-operator').innerHTML+=[...positions.operators].map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('');
+ $('#history-form').onsubmit=async e=>{e.preventDefault();e.submitter.disabled=true;try{
+  const history=await api('/field/history?operatorId='+$('#history-operator').value+'&date='+$('#history-date').value);if(map!==localMap)return;layer.clearLayers();points=history.points;
+  // Break lines across gaps. Recorded GPS samples are not a reconstructed Dijkstra route.
+  let segment=[];for(let i=0;i<points.length;i++){const p=points[i],previous=points[i-1];if(previous&&new Date(p.capturedAt)-new Date(previous.capturedAt)>60000){if(segment.length>1)L.polyline(segment,{color:'#8156ad',weight:3,dashArray:'4 6'}).addTo(layer);segment=[];}segment.push([p.latitude,p.longitude]);}if(segment.length>1)L.polyline(segment,{color:'#8156ad',weight:3,dashArray:'4 6'}).addTo(layer);
+  history.visits.forEach(v=>L.circleMarker([v.latitude,v.longitude],{radius:7,color:v.outcome==='REALIZADO'?'#1f9d55':'#e87921'}).addTo(layer).bindPopup(`Orden ${v.orderId} · ${esc(v.outcome)}<br>${esc(v.observation)}`));
+  if(points.length)localMap.fitBounds(L.latLngBounds(points.map(p=>[p.latitude,p.longitude])),{padding:[30,30],maxZoom:17});
+  $('#history-status').textContent=`${points.length} posiciones · ${history.visits.length} visitas · fecha UTC${history.truncated?' · Límite de 10.000 posiciones alcanzado':''}. La línea punteada une muestras GPS; no demuestra el camino exacto entre ellas.`;
+  $('#history-step').max=Math.max(0,points.length-1);$('#history-step').value=0;$('#history-step').disabled=!points.length;cursor=null;
+  $('#history-visits').innerHTML=table(history.visits,[col('orderId','Orden'),col('outcome','Resultado'),col('observedSerial','Medidor'),col('reading','Lectura'),{label:'Distancia al servicio',render:r=>Math.round(r.distanceMeters)+' m'},{label:'Hora',render:r=>esc(new Date(r.receivedAt).toLocaleString())},col('observation','Observación')]);
+ }catch(error){$('#history-status').textContent=error.message;}finally{e.submitter.disabled=false;}};
+ $('#history-step').oninput=e=>{const p=points[Number(e.target.value)];if(!p)return;if(cursor)cursor.setLatLng([p.latitude,p.longitude]);else cursor=L.circleMarker([p.latitude,p.longitude],{radius:10,color:'#fff',fillColor:'#087f78',fillOpacity:1,weight:3}).addTo(layer);cursor.bindTooltip(new Date(p.capturedAt).toLocaleString()).openTooltip();};
+}
+async function recordWebVisit(order){
+ const [visits,detail]=await Promise.all([api(`/orders/${order.id}/visits`),api(`/orders/${order.id}`)]);
+ const serial=lookup.meters?.find(m=>lookup.installations?.some(i=>i.connectionId===order.connectionId&&!i.end&&i.meterId===m.id))?.serial??'';
+ modal('Registrar visita en campo',`<p class="notice">Se guardan fecha, hora y GPS. Necesita estar junto al servicio. Para REALIZADO adjunte antes la foto del medidor.</p><form id="web-visit" class="scope-form"><label>Resultado<select name="outcome"><option value="REALIZADO">Realizado</option><option value="OBSERVADO">Observado / no realizado</option></select></label><label>Número observado del medidor<input name="serial" value="${esc(serial)}"></label><label>Lectura actual<input name="reading" type="number" step="0.0001" min="0"></label><label>Observación<textarea name="observation"></textarea></label><label>Fotografía<select name="evidence"><option value="">Seleccionar fotografía…</option>${detail.evidence.filter(e=>e.contentType.startsWith('image/')).map(e=>`<option value="${e.id}">${esc(e.fileName)} · ${esc(e.meterSerial)}</option>`).join('')}</select></label><button class="primary">Obtener GPS y guardar visita</button><p role="alert"></p></form><p>${visits.length} visita(s) registradas en esta orden.</p>`);
+ $('#web-visit').onsubmit=async e=>{e.preventDefault();const f=e.target,b=e.submitter;b.disabled=true;try{
+  const gps=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,maximumAge:0,timeout:20000}));
+  const capturedAt=new Date(gps.timestamp).toISOString(),p=gps.coords,shift=await api('/field/shifts','POST');
+  await api('/field/position','POST',{shiftId:shift.id,latitude:p.latitude,longitude:p.longitude,accuracy:p.accuracy,capturedAt});
+  await api(`/orders/${order.id}/visits`,'POST',{requestId:crypto.randomUUID(),shiftId:shift.id,outcome:f.elements.outcome.value,observedSerial:f.elements.serial.value,reading:f.elements.reading.value?Number(f.elements.reading.value):null,observation:f.elements.observation.value,evidenceId:f.elements.evidence.value?Number(f.elements.evidence.value):null,latitude:p.latitude,longitude:p.longitude,accuracy:p.accuracy,capturedAt,version:order.version});$('#dialog').close();toast('Visita guardada con GPS.');await orderDetail(order.id);
+ }catch(error){f.querySelector('[role=alert]').textContent=error.message??'No se pudo obtener GPS.';}finally{b.disabled=false;}};
+}

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace AquaControl.Application;
 
-public interface IGeoReference { Task<int?> FixedCodeId(string code); }
+public interface IGeoReference { Task<int?> FixedCodeId(string code); Task<string?> FixedCodeLabel(int id); }
 
 public sealed class CommercialImportService(IData db, AquaService service, IGeoReference geo)
 {

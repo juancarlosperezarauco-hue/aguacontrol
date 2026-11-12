@@ -10,7 +10,21 @@ public static class Api {
  public static async Task<Actor> Actor(HttpContext c,AquaService service){var id=int.Parse(c.User.FindFirstValue(ClaimTypes.NameIdentifier)!);return new Actor(id,await service.Permissions(id));}
  public static void Map(WebApplication app){
   var api=app.MapGroup("/api").RequireAuthorization();
+  api.MapPost("/routes/preview",async(PlanRoute r,HttpContext c,AquaService s,RoutingService routes)=>await routes.Preview(await Actor(c,s),r));
+  api.MapPost("/routes",async(SaveRoute r,HttpContext c,AquaService s,RoutingService routes)=>await routes.Save(await Actor(c,s),r));
+  api.MapGet("/routes",async(HttpContext c,AquaService s,RoutingService routes)=>await routes.Routes(await Actor(c,s)));
+  api.MapGet("/routes/options",async(int operatorId,string kind,HttpContext c,AquaService s,RoutingService routes)=>await routes.Options(await Actor(c,s),operatorId,kind));
+  api.MapPost("/orders/{id:int}/visits",async(int id,NewVisit r,HttpContext c,AquaService s)=>await s.Visit(await Actor(c,s),id,r));
+  api.MapGet("/orders/{id:int}/visits",async(int id,HttpContext c,AquaService s,AquaDb db)=>{await s.OrderAccess(await Actor(c,s),id);return await db.Set<FieldVisit>().Where(v=>v.OrderId==id).OrderByDescending(v=>v.Id).ToListAsync();});
+  api.MapGet("/field/history",async(int operatorId,DateTime date,HttpContext c,AquaService s)=>await s.FieldHistory(await Actor(c,s),operatorId,date));
+  api.MapPost("/connections/{id:int}/administrative-status",async(int id,ServiceStatusRequest r,HttpContext c,AquaService s)=>{await s.ChangeServiceStatus(await Actor(c,s),id,r.Status,r.Reason,r.Version);return Results.Ok();});
+  api.MapGet("/dashboard/operational",async(HttpContext c,AquaService s)=>await s.OperationalDashboard(await Actor(c,s)));
   api.MapGet("/dashboard",async(HttpContext c,AquaService s)=>await s.Dashboard(await Actor(c,s)));
+  api.MapPost("/field/shifts",async(HttpContext c,AquaService s)=>await s.StartShift(await Actor(c,s)));
+  api.MapPost("/field/position",async(FieldPosition p,HttpContext c,AquaService s)=>{await s.PublishPosition(await Actor(c,s),p);return Results.Ok();});
+  api.MapPost("/field/shifts/{id:int}/end",async(int id,HttpContext c,AquaService s)=>{await s.EndShift(await Actor(c,s),id);return Results.Ok();});
+  api.MapGet("/field/positions",async(HttpContext c,AquaService s)=>await s.FieldPositions(await Actor(c,s)));
+  api.MapGet("/mobile/orders/{id:int}/context",async(int id,HttpContext c,AquaService s)=>await s.MobileContext(await Actor(c,s),id));
   async Task<IReadOnlyDictionary<string,string>> ReadCommercialFiles(HttpRequest request) {
    var form=await request.ReadFormAsync();var result=new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
    foreach(var file in form.Files){using var reader=new StreamReader(file.OpenReadStream());result[Path.GetFileName(file.FileName)]=await reader.ReadToEndAsync();}return result;
@@ -21,20 +35,23 @@ public static class Api {
   api.MapGet("/catalog/{key}",async(string key,int? page,string? search,HttpContext c,AquaService s,CatalogService cats)=>await cats.List(await Actor(c,s),key,page??1,search));
   api.MapPost("/catalog/{key}",async(string key,JsonElement body,HttpContext c,AquaService s,CatalogService cats)=>await cats.Save(await Actor(c,s),key,null,body));
   api.MapPut("/catalog/{key}/{id:int}",async(string key,int id,JsonElement body,HttpContext c,AquaService s,CatalogService cats)=>await cats.Save(await Actor(c,s),key,id,body));
-  api.MapGet("/lookup",async(HttpContext c,AquaService s,AquaDb db)=>{var a=await Actor(c,s);var contracts=await s.Contracts(a).OrderByDescending(x=>x.Id).Take(1000).ToListAsync();var clientIds=contracts.Select(x=>x.ClientId).ToList();var connectionIds=contracts.Select(x=>x.ConnectionId).ToList();var accountIds=contracts.Select(x=>x.AccountId).ToList();return new{contracts,
+  api.MapGet("/lookup",async(HttpContext c,AquaService s,AquaDb db)=>{var a=await Actor(c,s);var contracts=await s.Contracts(a).OrderByDescending(x=>x.Id).Take(1000).ToListAsync();var clientIds=contracts.Select(x=>x.ClientId).ToList();var connectionIds=contracts.Select(x=>x.ConnectionId).ToList();var accountIds=contracts.Select(x=>x.AccountId).ToList();var userOptions=new List<object>();if(a.Can("orders.read"))foreach(var user in await db.Set<User>().Where(x=>x.Active).ToListAsync()){var permissions=await s.Permissions(user.Id);var roles=await (from ur in db.Set<UserRole>() join role in db.Set<Role>() on ur.RoleId equals role.Id where ur.UserId==user.Id&&role.Active select role.Name).ToListAsync();userOptions.Add(new{user.Id,user.Name,supervisor=permissions.Contains("orders.manage"),reader=roles.Contains(RolePolicy.Reader),technician=roles.Contains(RolePolicy.Technician)});}return new{contracts,
    clients=await db.Set<Client>().Where(x=>a.Can("customers.read")||clientIds.Contains(x.Id)).OrderBy(x=>x.Name).Take(1000).ToListAsync(),
    accounts=await db.Set<Account>().Where(x=>a.Can("customers.read")||accountIds.Contains(x.Id)).OrderBy(x=>x.Number).Take(1000).ToListAsync(),
    connections=await db.Set<Connection>().Where(x=>a.Can("customers.read")||connectionIds.Contains(x.Id)).OrderBy(x=>x.Code).Take(1000).ToListAsync(),
    installations=await db.Set<MeterInstallation>().Where(x=>a.Can("customers.read")||connectionIds.Contains(x.ConnectionId)).OrderByDescending(x=>x.Id).Take(1000).ToListAsync(),
-   meters=await db.Set<Meter>().Where(x=>a.Can("customers.read")||db.Set<MeterInstallation>().Any(i=>i.MeterId==x.Id&&connectionIds.Contains(i.ConnectionId))).Take(1000).ToListAsync(),
+   meters=await db.Set<Meter>().Where(x=>a.Can("customers.read")||a.Can("meters.install")||db.Set<MeterInstallation>().Any(i=>i.MeterId==x.Id&&connectionIds.Contains(i.ConnectionId))).Take(1000).ToListAsync(),
    tariffs=a.Can("billing.read")?await db.Set<Tariff>().OrderBy(x=>x.Name).ToListAsync():[],
    types=a.Can("orders.read")?await db.Set<WorkType>().OrderBy(x=>x.Name).ToListAsync():[],
    materials=a.Can("orders.read")?await db.Set<Material>().Where(x=>x.Active).OrderBy(x=>x.Name).ToListAsync():[],
-   users=a.Can("orders.read")?await db.Set<User>().Where(x=>x.Active).Select(x=>new{x.Id,x.Name}).ToListAsync():null};});
+   users=userOptions};});
   api.MapGet("/map/service-points",async(HttpContext c,AquaService s,AquaDb db)=>{
    var a=await Actor(c,s);a.Require("geo.read");
    var term=c.Request.Query["query"].ToString().Trim();
-   if(term.Length<2)return Results.Ok(Array.Empty<object>());
+   var state=c.Request.Query["state"].ToString();
+   var allowed=new[]{"NORMAL","CORTADA","PENDIENTE_CORTE","BAJA_PARCIAL","BAJA_TOTAL","PENDIENTE_INSTALACION"};
+   Require(state==""||allowed.Contains(state),"Estado de búsqueda inválido.");
+   if(term.Length<2&&state=="")return Results.Ok(Array.Empty<object>());
    var numeric=int.TryParse(term,out var code);
    var rows=await (from contract in s.Contracts(a)
                    where contract.End==null
@@ -43,9 +60,10 @@ public static class Api {
                    join connection in db.Set<Connection>() on contract.ConnectionId equals connection.Id
                    join fixedCode in db.Set<FixedCode>() on connection.FixedCodeId equals fixedCode.Id into fixedCodes
                    from fixedCode in fixedCodes.DefaultIfEmpty()
-                   where client.Name.Contains(term)||client.Document.Contains(term)||account.Number.Contains(term)||connection.Code.Contains(term)||(numeric&&fixedCode!=null&&(fixedCode.CodFijo==code||fixedCode.CodF_SQL==code))
+                   where (term.Length<2||client.Name.Contains(term)||client.Document.Contains(term)||account.Number.Contains(term)||connection.Code.Contains(term)||(numeric&&fixedCode!=null&&(fixedCode.CodFijo==code||fixedCode.CodF_SQL==code)))
+                   where state==""||(state=="NORMAL"?connection.Status=="ACTIVA"&&!db.Set<CutNotice>().Any(n=>n.ContractId==contract.Id&&n.Status=="VIGENTE"):state=="PENDIENTE_CORTE"?connection.Status!="CORTADA"&&(connection.Status==state||db.Set<CutNotice>().Any(n=>n.ContractId==contract.Id&&n.Status=="VIGENTE")):state=="BAJA_TOTAL"?(connection.Status==state||connection.Status=="INACTIVA"):state=="PENDIENTE_INSTALACION"?(connection.Status==state||connection.Status=="PENDIENTE"||connection.Status=="EN_INSTALACION"):connection.Status==state)
                    orderby client.Name
-                   select new {contract,client,account,connection}).AsNoTracking().Take(50).ToListAsync();
+                   select new {contract,client,account,connection}).AsNoTracking().Take(250).ToListAsync();
    var connectionIds=rows.Select(x=>x.connection.Id).ToList();
    var installations=await db.Set<MeterInstallation>().AsNoTracking().Where(x=>connectionIds.Contains(x.ConnectionId)&&x.End==null).ToDictionaryAsync(x=>x.ConnectionId);
    var meterIds=installations.Values.Select(x=>x.MeterId).ToList();
@@ -57,7 +75,7 @@ public static class Api {
   api.MapPost("/contracts",async(NewContract r,HttpContext c,AquaService s)=>await s.CreateContract(await Actor(c,s),r));
   api.MapPost("/contracts/{id:int}/close",async(int id,VersionRequest r,HttpContext c,AquaService s)=>{await s.CloseContract(await Actor(c,s),id,r.Version);return Results.Ok();});
   api.MapPost("/installations",async(InstallRequest r,HttpContext c,AquaService s)=>await s.InstallMeter(await Actor(c,s),r.ConnectionId,r.MeterId,r.Initial,r.Final));
-  api.MapGet("/readings",async(HttpContext c,AquaService s,AquaDb db)=>{var a=await Actor(c,s);a.Require("billing.read");return await db.Set<Reading>().OrderByDescending(x=>x.Id).Take(500).ToListAsync();});
+  api.MapGet("/readings",async(HttpContext c,AquaService s,AquaDb db)=>{var a=await Actor(c,s);a.Require("billing.read");var connections=s.Contracts(a).Select(x=>x.ConnectionId);return await (from r in db.Set<Reading>() join i in db.Set<MeterInstallation>() on r.InstallationId equals i.Id where connections.Contains(i.ConnectionId) select r).OrderByDescending(x=>x.Id).Take(500).ToListAsync();});
   api.MapPost("/readings",async(NewReading r,HttpContext c,AquaService s)=>await s.AddReading(await Actor(c,s),r));
   api.MapGet("/invoices",async(HttpContext c,AquaService s)=>await s.InvoiceList(await Actor(c,s)));
   api.MapPost("/invoices",async(NewInvoice r,HttpContext c,AquaService s)=>await s.Bill(await Actor(c,s),r));
@@ -87,11 +105,13 @@ public static class Api {
   api.MapPost("/notices/{id:int}/resolve",async(int id,ResolveNoticeRequest r,HttpContext c,AquaService s)=>{await s.ResolveNotice(await Actor(c,s),id,r.Reason);return Results.Ok();});
   api.MapGet("/notifications",async(HttpContext c,AquaService s,AquaDb db)=>{var a=await Actor(c,s);return await db.Set<Notification>().Where(x=>x.UserId==a.Id).OrderByDescending(x=>x.Id).Take(100).ToListAsync();});
   api.MapPost("/notifications/{id:int}/read",async(int id,HttpContext c,AquaService s,AquaDb db)=>{var a=await Actor(c,s);var n=await s.Get<Notification>(id);Require(n.UserId==a.Id,"Notificación ajena.");n.ReadAt=DateTime.UtcNow;await db.SaveChangesAsync();return Results.Ok();});
-  api.MapGet("/users",async(HttpContext c,AquaService s,AquaDb db)=>{(await Actor(c,s)).Require("security.manage");return new{users=await db.Set<User>().Select(x=>new{x.Id,x.Login,x.Name,x.Active,x.MustChangePassword}).ToListAsync(),roles=await db.Set<Role>().ToListAsync(),assignments=await db.Set<UserRole>().ToListAsync(),permissions=await db.Set<Permission>().ToListAsync(),rolePermissions=await db.Set<RolePermission>().ToListAsync()};});
+  api.MapGet("/users",async(HttpContext c,AquaService s,AquaDb db,SecurityService sec)=>{var a=await Actor(c,s);a.Require("security.manage");var owner=await sec.IsOwner(a.Id);var ownerIds=await (from ur in db.Set<UserRole>() join r in db.Set<Role>() on ur.RoleId equals r.Id where r.Active&&r.Name==RolePolicy.Owner select ur.UserId).ToListAsync();return new{users=await db.Set<User>().Where(u=>db.Set<UserRole>().Any(ur=>ur.UserId==u.Id&&db.Set<Role>().Any(r=>r.Id==ur.RoleId&&r.Active))).Select(x=>new{x.Id,x.Login,x.Name,x.Active,x.MustChangePassword,canManage=x.Id!=a.Id&&(owner||!ownerIds.Contains(x.Id))}).ToListAsync(),roles=await db.Set<Role>().Where(x=>x.Active).ToListAsync(),assignments=await db.Set<UserRole>().ToListAsync(),permissions=await db.Set<Permission>().ToListAsync(),rolePermissions=await db.Set<RolePermission>().ToListAsync(),baseRoleNames=RolePolicy.BaseRoles.Keys,customPermissions=RolePolicy.CustomPermissions,canAssignOwner=owner};});
+  api.MapPost("/roles",async(CustomRoleRequest r,HttpContext c,AquaService s,SecurityService sec)=>await sec.SaveRole(await Actor(c,s),null,r.Name,r.Permissions,r.Active));
+  api.MapPut("/roles/{id:int}",async(int id,CustomRoleRequest r,HttpContext c,AquaService s,SecurityService sec)=>await sec.SaveRole(await Actor(c,s),id,r.Name,r.Permissions,r.Active));
   api.MapPost("/users",async(UserRequest r,HttpContext c,AquaService s,SecurityService sec)=>{var u=await sec.Create(await Actor(c,s),r.Login,r.Name,r.Password,r.RoleId,r.ClientId);return new{u.Id,u.Login,u.Name};});
   api.MapPost("/users/{id:int}/role",async(int id,RoleRequest r,HttpContext c,AquaService s,SecurityService sec)=>{await sec.SetRole(await Actor(c,s),id,r.RoleId,r.Active);return Results.Ok();});
   api.MapPost("/users/{id:int}/password",async(int id,ResetRequest r,HttpContext c,AquaService s,SecurityService sec)=>{await sec.Reset(await Actor(c,s),id,r.Password);return Results.Ok();});
-  api.MapPost("/users/{id:int}/client",async(int id,ClientLinkRequest r,HttpContext c,AquaService s,AquaDb db)=>{var a=await Actor(c,s);a.Require("security.manage");await s.Get<User>(id);await s.Get<Client>(r.ClientId);db.Add(new UserClient{UserId=id,ClientId=r.ClientId});s.Audit(a,"portal.vincular",id.ToString(),"cliente:"+r.ClientId);await db.SaveChangesAsync();return Results.Ok();});
+  api.MapPost("/users/{id:int}/client",async(int id,ClientLinkRequest r,HttpContext c,AquaService s,AquaDb db,SecurityService sec)=>{var a=await Actor(c,s);a.Require("security.manage");await sec.ManageTarget(a,id);await s.Get<User>(id);await s.Get<Client>(r.ClientId);db.Add(new UserClient{UserId=id,ClientId=r.ClientId});s.Audit(a,"portal.vincular",id.ToString(),"cliente:"+r.ClientId);await db.SaveChangesAsync();return Results.Ok();});
   api.MapGet("/audit",async(HttpContext c,AquaService s,AquaDb db)=>{(await Actor(c,s)).Require("reports.read");return await db.Set<Audit>().OrderByDescending(x=>x.Id).Take(300).ToListAsync();});
   api.MapGet("/reports/summary",async(HttpContext c,AquaService s,AquaDb db)=>{(await Actor(c,s)).Require("reports.read");return new{orders=await db.Set<WorkOrder>().GroupBy(x=>x.Status).Select(g=>new{state=g.Key,count=g.Count()}).ToListAsync(),materials=await db.Set<OrderMaterial>().GroupBy(x=>x.MaterialId).Select(g=>new{materialId=g.Key,quantity=g.Sum(x=>x.Quantity),cost=g.Sum(x=>x.Quantity*x.UnitCost)}).ToListAsync()};});
   api.MapGet("/geo/search",async(string? text,string? layers,int? page,int? pageSize,HttpContext c,AquaService s,GeoService geo)=>await geo.Search(await Actor(c,s),text,layers,page??1,pageSize??25));
@@ -110,3 +130,5 @@ public static class Api {
  }
 }
 record VersionRequest(string Version);record InstallRequest(int ConnectionId,int MeterId,decimal Initial,decimal? Final);record AdjustRequest(decimal Amount,string Reason);record GenerateInvoicesRequest(string Period,DateTime DueAt);record ActivityRequest(bool Done,string Result,string Version);record MaterialRequest(int MaterialId,decimal Quantity);record NoticeRequest(int ContractId);record ResolveNoticeRequest(string Reason);record UserRequest(string Login,string Name,string Password,int RoleId,int? ClientId);record RoleRequest(int RoleId,bool Active);record ResetRequest(string Password);record ClientLinkRequest(int ClientId);record GeoImportStartRequest(string? Mode,Guid? SourceId);
+record CustomRoleRequest(string Name,string[] Permissions,bool Active);
+record ServiceStatusRequest(string Status,string Reason,string Version);

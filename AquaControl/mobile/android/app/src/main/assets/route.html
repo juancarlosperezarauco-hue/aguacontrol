@@ -1,0 +1,21 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="vendor/leaflet.css"><style>html,body,#map{height:100%;margin:0}body{font:14px sans-serif;background:#eaf2ef}.stop{background:#087f78;border:2px solid white;border-radius:50%;color:white;text-align:center;line-height:24px;font-weight:bold;box-shadow:0 2px 5px #1236}.label{background:#fffffff2;padding:8px;border-radius:7px;font:12px sans-serif;color:#163640}</style><script src="vendor/leaflet.js"></script></head><body><div id="map"></div><script>
+const map=L.map('map').setView([-16.382,-60.965],13),points=L.layerGroup().addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'}).addTo(map);
+let fitted=false,me;
+window.setData=data=>{
+ points.clearLayers();const rows=(data.points||[]).filter(p=>Number.isFinite(p.latitude)&&Number.isFinite(p.longitude));
+ const bounds=L.latLngBounds([]),line=[];
+ rows.forEach((p,i)=>{
+  const location=[p.latitude,p.longitude],description=document.createElement('div');
+  description.textContent=(p.name||p.label||'Punto')+' · '+(p.status||'');
+  let marker;
+  if(data.kind==='monitor')marker=L.circleMarker(location,{radius:9,color:'#fff',weight:2,fillColor:p.isLive?'#087f78':'#889a9b',fillOpacity:1});
+  else marker=L.marker(location,{icon:L.divIcon({className:'stop',html:Number.isInteger(p.sequence)&&p.sequence>0?String(p.sequence):'•',iconSize:[26,26],iconAnchor:[13,13]})});
+  marker.bindPopup(description).addTo(points);bounds.extend(location);line.push(location);
+ });
+ const path=(data.path||[]).filter(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite)).map(p=>[p[1],p[0]]);
+ if(data.kind==='route'&&path.length>1){L.polyline(path,{color:'#335de5',weight:4}).addTo(points);path.forEach(p=>bounds.extend(p))}
+ if(!fitted&&bounds.isValid()){map.fitBounds(bounds,{padding:[28,28],maxZoom:17});fitted=true}
+};
+window.setPosition=(lat,lon)=>{if(me)map.removeLayer(me);me=L.circleMarker([lat,lon],{radius:8,color:'#fff',weight:2,fillColor:'#326de4',fillOpacity:1}).bindPopup('Mi ubicación enviada').addTo(map)};
+</script></body></html>

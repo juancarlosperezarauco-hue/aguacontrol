@@ -29,6 +29,14 @@ public class AquaDb(DbContextOptions<AquaDb> options):DbContext(options),IData {
   void FK<T,P>(string name) where T:class where P:class => b.Entity<T>().HasOne<P>().WithMany().HasForeignKey(name).OnDelete(DeleteBehavior.Restrict);
   void Unique<T>(params string[] fields) where T:class=>b.Entity<T>().HasIndex(fields).IsUnique();
   Unique<User>("Login");Unique<Role>("Name");Unique<UserRole>("UserId","RoleId");Unique<Permission>("Code");Unique<RolePermission>("RoleId","PermissionId");Unique<UserPermission>("UserId","PermissionId");Unique<UserClient>("UserId","ClientId");Unique<UserMenu>("UserId","MenuId");
+  FK<FieldShift,User>("UserId");b.Entity<FieldShift>().HasIndex(x=>x.UserId).IsUnique().HasFilter("[EndedAt] IS NULL");
+  FK<FieldRoute,User>("OperatorId");FK<FieldRoute,User>("CreatedById");
+  b.Entity<FieldRoute>().Property(x=>x.PathJson).HasColumnType("nvarchar(max)");b.Entity<FieldRoute>().HasIndex(x=>x.OperatorId).IsUnique().HasFilter("[Active]=1");
+  FK<RouteStop,FieldRoute>("RouteId");FK<RouteStop,WorkOrder>("OrderId");FK<RouteStop,Assignment>("AssignmentId");Unique<RouteStop>("RouteId","Sequence");Unique<RouteStop>("RouteId","OrderId");
+  FK<FieldVisit,WorkOrder>("OrderId");FK<FieldVisit,User>("UserId");FK<FieldVisit,FieldShift>("ShiftId");FK<FieldVisit,Meter>("MeterId");FK<FieldVisit,Evidence>("EvidenceId");Unique<FieldVisit>("RequestId");b.Entity<FieldVisit>().HasIndex(x=>new{x.OrderId,x.ReceivedAt});
+  FK<FieldTrack,FieldShift>("ShiftId");Unique<FieldTrack>("ShiftId","CapturedAt");
+  b.Entity<FieldVisit>().ToTable(t=>{t.HasCheckConstraint("CK_Visit_GPS","[Latitude] BETWEEN -90 AND 90 AND [Longitude] BETWEEN -180 AND 180 AND [Accuracy]>=0 AND [DistanceMeters]>=0");t.HasCheckConstraint("CK_Visit_Outcome","[Outcome] IN ('REALIZADO','OBSERVADO') AND ([Reading] IS NULL OR [Reading]>=0)");});
+  FK<Evidence,Meter>("MeterId");FK<Evidence,Connection>("ConnectionId");
   FK<UserRole,User>("UserId");FK<UserRole,Role>("RoleId");FK<RolePermission,Role>("RoleId");FK<RolePermission,Permission>("PermissionId");FK<UserPermission,User>("UserId");FK<UserPermission,Permission>("PermissionId");FK<UserClient,User>("UserId");FK<UserClient,Client>("ClientId");FK<Menu,Menu>("ParentId");FK<UserMenu,User>("UserId");FK<UserMenu,Menu>("MenuId");
   Unique<Account>("Number");Unique<Connection>("Code");Unique<Sector>("Code");Unique<Meter>("Serial");Unique<Material>("Code");Unique<WorkType>("Code");Unique<Invoice>("Number");Unique<Invoice>("ContractId","Period");Unique<PaymentIntent>("Key");Unique<Payment>("Reference");Unique<Payment>("IntentId");Unique<PaymentEvent>("ExternalId");Unique<PaymentReversal>("PaymentId");Unique<PaymentReversal>("Reference");Unique<WorkOrder>("Number");Unique<Reading>("InstallationId","Period");Unique<NoticeInvoice>("NoticeId","InvoiceId");
   FK<Connection,FixedCode>("FixedCodeId");FK<Connection,Sector>("SectorId");FK<Connection,Road>("RoadId");FK<FixedCode,Lot>("IdLote");FK<Lot,Block>("IdManzana");

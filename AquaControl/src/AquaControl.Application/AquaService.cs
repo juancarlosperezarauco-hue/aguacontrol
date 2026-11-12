@@ -5,7 +5,7 @@ using System.Globalization;
 using static AquaControl.Domain.Workflow;
 namespace AquaControl.Application;
 
-public partial class AquaService(IData db) {
+public partial class AquaService(IData db,FieldRules? fieldRules=null,IGeoReference? geo=null) {
  public async Task<T> Get<T>(int id) where T:Entity => await db.Set<T>().FindAsync(id) ?? throw new BusinessException("Registro no encontrado.");
  public async Task<HashSet<string>> Permissions(int userId) {
   var roles=from ur in db.Set<UserRole>() join r in db.Set<Role>() on ur.RoleId equals r.Id where ur.UserId==userId&&r.Active select r.Id;
@@ -14,7 +14,17 @@ public partial class AquaService(IData db) {
   var set=result.ToHashSet();foreach(var o in overrides)if(o.Allow)set.Add(o.Code);else set.Remove(o.Code);return set;
  }
  public IQueryable<int> ClientIds(Actor actor)=>db.Set<UserClient>().Where(x=>x.UserId==actor.Id).Select(x=>x.ClientId);
- public IQueryable<Contract> Contracts(Actor actor)=>actor.Can("customers.read")? db.Set<Contract>():db.Set<Contract>().Where(x=>ClientIds(actor).Contains(x.ClientId));
+ public IQueryable<Contract> Contracts(Actor actor){
+  if(actor.Can("customers.read"))return db.Set<Contract>();
+  var assigned=from ass in db.Set<Assignment>() join o in db.Set<WorkOrder>() on ass.OrderId equals o.Id where ass.OperatorId==actor.Id&&ass.End==null select o.ConnectionId;
+  return db.Set<Contract>().Where(x=>ClientIds(actor).Contains(x.ClientId)||(actor.Can("orders.execute")&&assigned.Contains(x.ConnectionId)));
+ }
+ public async Task AssignedFieldWork(Actor a,int connectionId,bool reading){
+  if(a.Can("orders.manage"))return;
+  if(!a.Can("orders.execute")){Require(await Contracts(a).AnyAsync(c=>c.ConnectionId==connectionId),"Servicio fuera de su ámbito de acceso.");return;}
+  a.Require(reading?"orders.readings":"orders.technical");
+  Require(await (from ass in db.Set<Assignment>() join o in db.Set<WorkOrder>() on ass.OrderId equals o.Id join t in db.Set<WorkType>() on o.WorkTypeId equals t.Id where ass.OperatorId==a.Id&&ass.End==null&&o.ConnectionId==connectionId&&o.Status=="EN_EJECUCION"&&(reading?t.Code=="LECTURA":(t.Code=="INSTALACION"||t.Code=="CAMBIO_MEDIDOR"||t.Code=="NUEVA_CONEXION")) select o.Id).AnyAsync(),"Requiere una orden de su especialidad asignada y EN_EJECUCION para este servicio.");
+ }
  public async Task AccountAccess(Actor a,int id){ if(a.Can("billing.read"))return;Require(await Contracts(a).AnyAsync(x=>x.AccountId==id),"La cuenta no pertenece a su portal."); }
  public void Audit(Actor a,string action,string resource,string detail="")=>db.Set<Audit>().Add(new Audit{UserId=a.Id,Action=action,Resource=resource,Detail=detail});
  public static void Version(Entity e,string value)=>Require(Convert.ToBase64String(e.Version)==value,"El registro cambió. Recargue antes de continuar.");
@@ -31,15 +41,15 @@ public partial class AquaService(IData db) {
  }
  public async Task CloseContract(Actor a,int id,string version){a.Require("customers.write");var c=await Get<Contract>(id);Version(c,version);Require(c.End==null,"Contrato ya cerrado.");c.End=DateTime.UtcNow;Audit(a,"contrato.cerrar",id.ToString());await db.SaveChangesAsync();}
  public async Task<MeterInstallation> InstallMeter(Actor a,int connectionId,int meterId,decimal initial,decimal? final){
-  a.Require("customers.write");Require(initial>=0,"Lectura inicial inválida.");using var tx=await db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+  if(!a.Can("customers.write"))a.Require("meters.install");Require(initial>=0,"Lectura inicial inválida.");using var tx=await db.Database.BeginTransactionAsync(IsolationLevel.Serializable);await AssignedFieldWork(a,connectionId,false);
   await Get<Connection>(connectionId);Require((await Get<Meter>(meterId)).Active,"Medidor inactivo.");Require(!await db.Set<MeterInstallation>().AnyAsync(x=>x.MeterId==meterId&&x.End==null),"Medidor ya instalado.");
   var old=await db.Set<MeterInstallation>().SingleOrDefaultAsync(x=>x.ConnectionId==connectionId&&x.End==null);
   if(old!=null){var last=await db.Set<Reading>().Where(x=>x.InstallationId==old.Id).OrderByDescending(x=>x.TakenAt).FirstOrDefaultAsync();Require(final.HasValue&&final>=(last?.Value??old.InitialReading),"Indique lectura final válida del medidor anterior.");old.End=DateTime.UtcNow;old.FinalReading=final;await db.SaveChangesAsync();}
-  var m=new MeterInstallation{ConnectionId=connectionId,MeterId=meterId,InitialReading=initial};db.Set<MeterInstallation>().Add(m);Audit(a,"medidor.instalar",connectionId.ToString());await db.SaveChangesAsync();await tx.CommitAsync();return m;
+  var m=new MeterInstallation{ConnectionId=connectionId,MeterId=meterId,InitialReading=initial};db.Set<MeterInstallation>().Add(m);var connection=await Get<Connection>(connectionId);if(connection.Status is "PENDIENTE" or "PENDIENTE_INSTALACION" or "EN_INSTALACION")connection.Status="ACTIVA";Audit(a,"medidor.instalar",connectionId.ToString());await db.SaveChangesAsync();await tx.CommitAsync();return m;
  }
  public async Task<Reading> AddReading(Actor a,NewReading r){
   a.Require("readings.write");Require(DateTime.TryParseExact(r.Period,"yyyy-MM",CultureInfo.InvariantCulture,DateTimeStyles.None,out _),"Período requerido: AAAA-MM.");
-  using var tx=await db.Database.BeginTransactionAsync(IsolationLevel.Serializable);var installation=await Get<MeterInstallation>(r.InstallationId);Require(installation.End==null,"Instalación cerrada.");
+  using var tx=await db.Database.BeginTransactionAsync(IsolationLevel.Serializable);var installation=await Get<MeterInstallation>(r.InstallationId);Require(installation.End==null,"Instalación cerrada.");await AssignedFieldWork(a,installation.ConnectionId,true);
   var last=await db.Set<Reading>().Where(x=>x.InstallationId==r.InstallationId).OrderByDescending(x=>x.Period).FirstOrDefaultAsync();Require(last==null||string.CompareOrdinal(r.Period,last.Period)>0,"El período debe ser posterior a la última lectura.");
   var previous=last?.Value??installation.InitialReading;Require(r.Value>=previous,"La lectura no puede disminuir. Registre un cambio de medidor.");Require(!r.Estimated||!string.IsNullOrWhiteSpace(r.Note),"Indique motivo de estimación.");
   var reading=new Reading{InstallationId=r.InstallationId,Period=r.Period,Value=r.Value,PreviousValue=previous,Estimated=r.Estimated,Note=r.Note,UserId=a.Id};db.Set<Reading>().Add(reading);Audit(a,"lectura.registrar",r.InstallationId.ToString());await db.SaveChangesAsync();await tx.CommitAsync();return reading;
@@ -47,7 +57,7 @@ public partial class AquaService(IData db) {
  public async Task<Invoice> Bill(Actor a,NewInvoice r){
   r=r with {DueAt=r.DueAt.ToUniversalTime()};a.Require("billing.write");using var tx=await db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
   var contract=await Get<Contract>(r.ContractId);var reading=await Get<Reading>(r.ReadingId);var installation=await Get<MeterInstallation>(reading.InstallationId);
-  Require(installation.ConnectionId==contract.ConnectionId,"La lectura no pertenece al contrato.");Require(reading.TakenAt>=contract.Start&&(contract.End==null||reading.TakenAt<=contract.End),"La lectura está fuera de la vigencia del contrato.");
+  Require(installation.ConnectionId==contract.ConnectionId,"La lectura no pertenece al contrato.");await AssignedFieldWork(a,contract.ConnectionId,true);if(a.Can("orders.execute")&&!a.Can("orders.manage"))Require(reading.UserId==a.Id,"Solo puede facturar sus propias lecturas asignadas.");Require(reading.TakenAt>=contract.Start&&(contract.End==null||reading.TakenAt<=contract.End),"La lectura está fuera de la vigencia del contrato.");
   Require(r.DueAt.Date>=DateTime.UtcNow.Date,"Vencimiento inválido.");Require(!await db.Set<Invoice>().AnyAsync(x=>x.ContractId==r.ContractId&&x.Period==reading.Period),"Ya existe factura del período.");
   var tariff=await Get<Tariff>(contract.TariffId);Require(tariff.Active,"La tarifa del contrato está pendiente de aprobación. Configure una tarifa vigente antes de facturar.");var client=await Get<Client>(contract.ClientId);var consumption=reading.Value-reading.PreviousValue;
   var bands=await db.Set<TariffBand>().Where(x=>x.TariffId==tariff.Id).OrderBy(x=>x.From).ToListAsync();decimal variable=consumption*tariff.UnitPrice;
@@ -56,7 +66,7 @@ public partial class AquaService(IData db) {
   db.Set<Invoice>().Add(invoice);await db.SaveChangesAsync();db.Set<InvoiceLine>().AddRange(new InvoiceLine{InvoiceId=invoice.Id,Description="Cargo fijo · "+tariff.Name,Quantity=1,UnitPrice=tariff.FixedCharge,Amount=Money(tariff.FixedCharge)},new InvoiceLine{InvoiceId=invoice.Id,Description="Consumo m³ · "+tariff.Name,Quantity=consumption,UnitPrice=consumption>0?variable/consumption:0,Amount=Money(variable)});Audit(a,"factura.emitir",invoice.Number);await db.SaveChangesAsync();await tx.CommitAsync();return invoice;
  }
  public async Task<object> GenerateInvoices(Actor a,string period,DateTime dueAt){
-  a.Require("billing.write");Require(DateTime.TryParseExact(period,"yyyy-MM",CultureInfo.InvariantCulture,DateTimeStyles.None,out _),"Período requerido: AAAA-MM.");Require(dueAt.Date>=DateTime.UtcNow.Date,"Vencimiento inválido.");
+  a.Require("billing.bulk");a.Require("billing.write");Require(DateTime.TryParseExact(period,"yyyy-MM",CultureInfo.InvariantCulture,DateTimeStyles.None,out _),"Período requerido: AAAA-MM.");Require(dueAt.Date>=DateTime.UtcNow.Date,"Vencimiento inválido.");
   var candidates=await (from c in db.Set<Contract>() join i in db.Set<MeterInstallation>() on c.ConnectionId equals i.ConnectionId join r in db.Set<Reading>() on i.Id equals r.InstallationId where c.End==null&&i.End==null&&r.Period==period&&!db.Set<Invoice>().Any(f=>f.ContractId==c.Id&&f.Period==period) select new{c.Id,ReadingId=r.Id}).ToListAsync();
   var emitted=new List<int>();var errors=new List<object>();
   foreach(var item in candidates){try{var invoice=await Bill(a,new NewInvoice(item.Id,item.ReadingId,dueAt));emitted.Add(invoice.Id);}catch(BusinessException e){errors.Add(new{contractId=item.Id,error=e.Message});}}

@@ -5,6 +5,10 @@ namespace AquaControl.Infrastructure;
 
 public sealed class GeoReference(AquaDb db) : IGeoReference
 {
+    public async Task<string?> FixedCodeLabel(int id) {
+        var code=await db.Set<FixedCode>().AsNoTracking().SingleOrDefaultAsync(x=>x.Id==id);
+        return code?.CodFijo?.ToString()??code?.CodF_SQL?.ToString()??code?.CodF_SIG;
+    }
     public async Task<int?> FixedCodeId(string code)
     {
         if (string.IsNullOrWhiteSpace(code)) return null;

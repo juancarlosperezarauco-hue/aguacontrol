@@ -1,0 +1,15 @@
+using AquaControl.Application;
+using AquaControl.Domain;
+using AquaControl.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+var connection="Server=np:\\\\.\\pipe\\sql\\query;Database=AquaControlRoleTests;Integrated Security=true;Encrypt=false;TrustServerCertificate=true";
+await using var db=new AquaDb(new DbContextOptionsBuilder<AquaDb>().UseSqlServer(connection,s=>s.UseNetTopologySuite()).Options);
+if(db.Database.GetDbConnection().Database!="AquaControlRoleTests")throw new Exception("Solo pruebas.");
+var service=new AquaService(db);var security=new SecurityService(db,service);
+var owner=await db.Set<User>().SingleAsync(u=>u.Login=="aquadmin");var actor=new Actor(owner.Id,await service.Permissions(owner.Id));
+var password=Environment.GetEnvironmentVariable("AQUA_QA_PASSWORD")??throw new Exception("Defina AQUA_QA_PASSWORD, nunca una contraseña operativa.");
+var role=await db.Set<Role>().SingleAsync(r=>r.Name==RolePolicy.Admin);
+var user=await db.Set<User>().SingleOrDefaultAsync(u=>u.Login=="qa-alcance-sig");
+if(user==null)user=await security.Create(actor,"qa-alcance-sig","FICTICIO · revisión de alcance",password,role.Id,null);
+SecurityService.Password(user,password);user.MustChangePassword=false;user.Active=true;await db.SaveChangesAsync();
+Console.WriteLine("Cuenta QA preparada exclusivamente en AquaControlRoleTests.");

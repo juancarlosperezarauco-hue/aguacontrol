@@ -260,6 +260,44 @@ CREATE TABLE [IntentosPago] (
 GO
 
 
+CREATE TABLE [JornadasCampo] (
+    [Id] int NOT NULL IDENTITY,
+    [UserId] int NOT NULL,
+    [StartedAt] datetime2 NOT NULL,
+    [EndedAt] datetime2 NULL,
+    [Latitude] float NULL,
+    [Longitude] float NULL,
+    [Accuracy] float NULL,
+    [CapturedAt] datetime2 NULL,
+    [ReceivedAt] datetime2 NULL,
+    [Version] rowversion NOT NULL,
+    CONSTRAINT [PK_JornadasCampo] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_JornadasCampo_Usuarios_UserId] FOREIGN KEY ([UserId]) REFERENCES [Usuarios] ([IdUsuario]) ON DELETE NO ACTION
+);
+GO
+
+
+CREATE TABLE [RutasCampo] (
+    [Id] int NOT NULL IDENTITY,
+    [OperatorId] int NOT NULL,
+    [CreatedById] int NOT NULL,
+    [CreatedAt] datetime2 NOT NULL,
+    [Active] bit NOT NULL,
+    [Kind] nvarchar(20) NOT NULL,
+    [TravelMode] nvarchar(20) NOT NULL,
+    [StartLatitude] float NOT NULL,
+    [StartLongitude] float NOT NULL,
+    [DistanceMeters] float NOT NULL,
+    [NetworkHash] nvarchar(64) NOT NULL,
+    [PathJson] nvarchar(max) NOT NULL,
+    [Version] rowversion NOT NULL,
+    CONSTRAINT [PK_RutasCampo] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_RutasCampo_Usuarios_CreatedById] FOREIGN KEY ([CreatedById]) REFERENCES [Usuarios] ([IdUsuario]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_RutasCampo_Usuarios_OperatorId] FOREIGN KEY ([OperatorId]) REFERENCES [Usuarios] ([IdUsuario]) ON DELETE NO ACTION
+);
+GO
+
+
 CREATE TABLE [UsuarioMenu] (
     [Id] int NOT NULL IDENTITY,
     [UserId] int NOT NULL,
@@ -386,6 +424,21 @@ CREATE TABLE [Pagos] (
     CONSTRAINT [CK_Payment_Positive] CHECK ([Amount]>0),
     CONSTRAINT [FK_Pagos_CuentasServicio_AccountId] FOREIGN KEY ([AccountId]) REFERENCES [CuentasServicio] ([Id]) ON DELETE NO ACTION,
     CONSTRAINT [FK_Pagos_IntentosPago_IntentId] FOREIGN KEY ([IntentId]) REFERENCES [IntentosPago] ([Id]) ON DELETE NO ACTION
+);
+GO
+
+
+CREATE TABLE [PosicionesCampo] (
+    [Id] int NOT NULL IDENTITY,
+    [ShiftId] int NOT NULL,
+    [Latitude] float NOT NULL,
+    [Longitude] float NOT NULL,
+    [Accuracy] float NOT NULL,
+    [CapturedAt] datetime2 NOT NULL,
+    [ReceivedAt] datetime2 NOT NULL,
+    [Version] rowversion NOT NULL,
+    CONSTRAINT [PK_PosicionesCampo] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_PosicionesCampo_JornadasCampo_ShiftId] FOREIGN KEY ([ShiftId]) REFERENCES [JornadasCampo] ([Id]) ON DELETE NO ACTION
 );
 GO
 
@@ -671,8 +724,28 @@ CREATE TABLE [Facturas] (
 GO
 
 
+CREATE TABLE [ParadasRuta] (
+    [Id] int NOT NULL IDENTITY,
+    [RouteId] int NOT NULL,
+    [OrderId] int NOT NULL,
+    [AssignmentId] int NOT NULL,
+    [Sequence] int NOT NULL,
+    [DistanceMeters] float NOT NULL,
+    [AccessMeters] float NOT NULL,
+    [Version] rowversion NOT NULL,
+    CONSTRAINT [PK_ParadasRuta] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_ParadasRuta_Asignaciones_AssignmentId] FOREIGN KEY ([AssignmentId]) REFERENCES [Asignaciones] ([Id]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_ParadasRuta_OrdenesServicio_OrderId] FOREIGN KEY ([OrderId]) REFERENCES [OrdenesServicio] ([IdOrden]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_ParadasRuta_RutasCampo_RouteId] FOREIGN KEY ([RouteId]) REFERENCES [RutasCampo] ([Id]) ON DELETE NO ACTION
+);
+GO
+
+
 CREATE TABLE [Evidencias] (
     [Id] int NOT NULL IDENTITY,
+    [ConnectionId] int NULL,
+    [MeterId] int NULL,
+    [MeterSerial] nvarchar(80) NOT NULL,
     [OrderId] int NOT NULL,
     [ActivityId] int NULL,
     [UserId] int NOT NULL,
@@ -684,6 +757,8 @@ CREATE TABLE [Evidencias] (
     [CreatedAt] datetime2 NOT NULL,
     [Version] rowversion NOT NULL,
     CONSTRAINT [PK_Evidencias] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_Evidencias_Conexiones_ConnectionId] FOREIGN KEY ([ConnectionId]) REFERENCES [Conexiones] ([Id]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_Evidencias_Medidores_MeterId] FOREIGN KEY ([MeterId]) REFERENCES [Medidores] ([Id]) ON DELETE NO ACTION,
     CONSTRAINT [FK_Evidencias_OrdenActividades_ActivityId] FOREIGN KEY ([ActivityId]) REFERENCES [OrdenActividades] ([Id]) ON DELETE NO ACTION,
     CONSTRAINT [FK_Evidencias_OrdenesServicio_OrderId] FOREIGN KEY ([OrderId]) REFERENCES [OrdenesServicio] ([IdOrden]) ON DELETE NO ACTION,
     CONSTRAINT [FK_Evidencias_Usuarios_UserId] FOREIGN KEY ([UserId]) REFERENCES [Usuarios] ([IdUsuario]) ON DELETE NO ACTION
@@ -743,6 +818,37 @@ CREATE TABLE [PagoAplicaciones] (
     CONSTRAINT [CK_Allocation_Positive] CHECK ([Amount]>0),
     CONSTRAINT [FK_PagoAplicaciones_Facturas_InvoiceId] FOREIGN KEY ([InvoiceId]) REFERENCES [Facturas] ([Id]) ON DELETE NO ACTION,
     CONSTRAINT [FK_PagoAplicaciones_Pagos_PaymentId] FOREIGN KEY ([PaymentId]) REFERENCES [Pagos] ([Id]) ON DELETE NO ACTION
+);
+GO
+
+
+CREATE TABLE [VisitasCampo] (
+    [Id] int NOT NULL IDENTITY,
+    [RequestId] uniqueidentifier NOT NULL,
+    [OrderId] int NOT NULL,
+    [UserId] int NOT NULL,
+    [ShiftId] int NOT NULL,
+    [MeterId] int NULL,
+    [EvidenceId] int NULL,
+    [ObservedSerial] nvarchar(80) NOT NULL,
+    [Reading] decimal(18,4) NULL,
+    [Outcome] nvarchar(20) NOT NULL,
+    [Observation] nvarchar(2000) NOT NULL,
+    [Latitude] float NOT NULL,
+    [Longitude] float NOT NULL,
+    [Accuracy] float NOT NULL,
+    [DistanceMeters] float NOT NULL,
+    [CapturedAt] datetime2 NOT NULL,
+    [ReceivedAt] datetime2 NOT NULL,
+    [Version] rowversion NOT NULL,
+    CONSTRAINT [PK_VisitasCampo] PRIMARY KEY ([Id]),
+    CONSTRAINT [CK_Visit_GPS] CHECK ([Latitude] BETWEEN -90 AND 90 AND [Longitude] BETWEEN -180 AND 180 AND [Accuracy]>=0 AND [DistanceMeters]>=0),
+    CONSTRAINT [CK_Visit_Outcome] CHECK ([Outcome] IN ('REALIZADO','OBSERVADO') AND ([Reading] IS NULL OR [Reading]>=0)),
+    CONSTRAINT [FK_VisitasCampo_Evidencias_EvidenceId] FOREIGN KEY ([EvidenceId]) REFERENCES [Evidencias] ([Id]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_VisitasCampo_JornadasCampo_ShiftId] FOREIGN KEY ([ShiftId]) REFERENCES [JornadasCampo] ([Id]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_VisitasCampo_Medidores_MeterId] FOREIGN KEY ([MeterId]) REFERENCES [Medidores] ([Id]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_VisitasCampo_OrdenesServicio_OrderId] FOREIGN KEY ([OrderId]) REFERENCES [OrdenesServicio] ([IdOrden]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_VisitasCampo_Usuarios_UserId] FOREIGN KEY ([UserId]) REFERENCES [Usuarios] ([IdUsuario]) ON DELETE NO ACTION
 );
 GO
 
@@ -859,6 +965,14 @@ CREATE INDEX [IX_Evidencias_ActivityId] ON [Evidencias] ([ActivityId]);
 GO
 
 
+CREATE INDEX [IX_Evidencias_ConnectionId] ON [Evidencias] ([ConnectionId]);
+GO
+
+
+CREATE INDEX [IX_Evidencias_MeterId] ON [Evidencias] ([MeterId]);
+GO
+
+
 CREATE INDEX [IX_Evidencias_OrderId] ON [Evidencias] ([OrderId]);
 GO
 
@@ -916,6 +1030,10 @@ GO
 
 
 CREATE INDEX [IX_IntentosPago_UserId] ON [IntentosPago] ([UserId]);
+GO
+
+
+CREATE UNIQUE INDEX [IX_JornadasCampo_UserId] ON [JornadasCampo] ([UserId]) WHERE [EndedAt] IS NULL;
 GO
 
 
@@ -1023,7 +1141,27 @@ CREATE UNIQUE INDEX [IX_Pagos_Reference] ON [Pagos] ([Reference]);
 GO
 
 
+CREATE INDEX [IX_ParadasRuta_AssignmentId] ON [ParadasRuta] ([AssignmentId]);
+GO
+
+
+CREATE INDEX [IX_ParadasRuta_OrderId] ON [ParadasRuta] ([OrderId]);
+GO
+
+
+CREATE UNIQUE INDEX [IX_ParadasRuta_RouteId_OrderId] ON [ParadasRuta] ([RouteId], [OrderId]);
+GO
+
+
+CREATE UNIQUE INDEX [IX_ParadasRuta_RouteId_Sequence] ON [ParadasRuta] ([RouteId], [Sequence]);
+GO
+
+
 CREATE UNIQUE INDEX [IX_Permisos_Code] ON [Permisos] ([Code]);
+GO
+
+
+CREATE UNIQUE INDEX [IX_PosicionesCampo_ShiftId_CapturedAt] ON [PosicionesCampo] ([ShiftId], [CapturedAt]);
 GO
 
 
@@ -1048,6 +1186,14 @@ GO
 
 
 CREATE UNIQUE INDEX [IX_RolesPermisos_RoleId_PermissionId] ON [RolesPermisos] ([RoleId], [PermissionId]);
+GO
+
+
+CREATE INDEX [IX_RutasCampo_CreatedById] ON [RutasCampo] ([CreatedById]);
+GO
+
+
+CREATE UNIQUE INDEX [IX_RutasCampo_OperatorId] ON [RutasCampo] ([OperatorId]) WHERE [Active]=1;
 GO
 
 
@@ -1100,6 +1246,30 @@ GO
 
 
 CREATE UNIQUE INDEX [IX_Vias_ImportId_Ordinal] ON [Vias] ([ImportId], [Ordinal]);
+GO
+
+
+CREATE INDEX [IX_VisitasCampo_EvidenceId] ON [VisitasCampo] ([EvidenceId]);
+GO
+
+
+CREATE INDEX [IX_VisitasCampo_MeterId] ON [VisitasCampo] ([MeterId]);
+GO
+
+
+CREATE INDEX [IX_VisitasCampo_OrderId_ReceivedAt] ON [VisitasCampo] ([OrderId], [ReceivedAt]);
+GO
+
+
+CREATE UNIQUE INDEX [IX_VisitasCampo_RequestId] ON [VisitasCampo] ([RequestId]);
+GO
+
+
+CREATE INDEX [IX_VisitasCampo_ShiftId] ON [VisitasCampo] ([ShiftId]);
+GO
+
+
+CREATE INDEX [IX_VisitasCampo_UserId] ON [VisitasCampo] ([UserId]);
 GO
 
 

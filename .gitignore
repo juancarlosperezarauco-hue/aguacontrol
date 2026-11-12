@@ -9,5 +9,6 @@
 TestResults/
 AquaControl/output/
 AquaControl/mobile/android/.gradle/
+AquaControl/mobile/android/.kotlin/
 AquaControl/mobile/android/local.properties
 AquaControl/mobile/android/**/build/
