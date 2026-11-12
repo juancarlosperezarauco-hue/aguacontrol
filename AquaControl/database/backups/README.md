@@ -1,11 +1,13 @@
 # Respaldo de desarrollo AquaControl
 
-`AquaControlDev_20260922.bak` es un respaldo comprimido y verificable de la base de desarrollo. Incluye la estructura, las capas SIG importadas y los datos demostrativos presentes al momento de su creación.
+`AquaControlDev_Equipo_20261111.bak` es el respaldo vigente para compartir de forma privada con el equipo. Incluye la estructura, las capas SIG importadas, el padrón de 6.271 servicios y la configuración presente al momento de su creación.
+
+Los archivos `.bak` están excluidos de Git por seguridad; distribuya este respaldo por OneDrive, Google Drive, USB o un canal privado, nunca mediante GitHub público.
 
 | Propiedad | Valor |
 |---|---|
-| Tamaño | 7.36 MB |
-| SHA-256 | `0924842D7642A63D431A2606875E1F968B5B06272F49AB6E5C378126636A5461` |
+| Tamaño | 9.13 MB |
+| SHA-256 | `118EDD56CEC53F91F59C00C2DB069B695EBF1A8222087DD53690D8E3D8CB41A5` |
 | Verificación SQL Server | `RESTORE VERIFYONLY WITH CHECKSUM` correcta |
 
 ## Restauración
@@ -16,7 +18,7 @@ O mediante `sqlcmd`, ajuste las rutas de datos de su instalación:
 
 ```sql
 RESTORE DATABASE AquaControlDev
-FROM DISK = N'C:\ruta\AquaControlDev_20260922.bak'
+FROM DISK = N'C:\ruta\AquaControlDev_Equipo_20261111.bak'
 WITH MOVE N'AquaControlDev' TO N'C:\SQLData\AquaControlDev.mdf',
      MOVE N'AquaControlDev_log' TO N'C:\SQLData\AquaControlDev_log.ldf',
      RECOVERY, REPLACE;
