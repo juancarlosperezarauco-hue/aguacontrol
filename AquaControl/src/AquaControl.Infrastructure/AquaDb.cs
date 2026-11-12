@@ -31,6 +31,7 @@ public class AquaDb(DbContextOptions<AquaDb> options):DbContext(options),IData {
   Unique<User>("Login");Unique<Role>("Name");Unique<UserRole>("UserId","RoleId");Unique<Permission>("Code");Unique<RolePermission>("RoleId","PermissionId");Unique<UserPermission>("UserId","PermissionId");Unique<UserClient>("UserId","ClientId");Unique<UserMenu>("UserId","MenuId");
   FK<FieldShift,User>("UserId");b.Entity<FieldShift>().HasIndex(x=>x.UserId).IsUnique().HasFilter("[EndedAt] IS NULL");
   FK<FieldRoute,User>("OperatorId");FK<FieldRoute,User>("CreatedById");
+  b.Entity<FieldRoute>().HasIndex(x=>x.RequestId).IsUnique().HasFilter("[RequestId] IS NOT NULL");
   b.Entity<FieldRoute>().Property(x=>x.PathJson).HasColumnType("nvarchar(max)");b.Entity<FieldRoute>().HasIndex(x=>x.OperatorId).IsUnique().HasFilter("[Active]=1");
   FK<RouteStop,FieldRoute>("RouteId");FK<RouteStop,WorkOrder>("OrderId");FK<RouteStop,Assignment>("AssignmentId");Unique<RouteStop>("RouteId","Sequence");Unique<RouteStop>("RouteId","OrderId");
   FK<FieldVisit,WorkOrder>("OrderId");FK<FieldVisit,User>("UserId");FK<FieldVisit,FieldShift>("ShiftId");FK<FieldVisit,Meter>("MeterId");FK<FieldVisit,Evidence>("EvidenceId");Unique<FieldVisit>("RequestId");b.Entity<FieldVisit>().HasIndex(x=>new{x.OrderId,x.ReceivedAt});

@@ -12,6 +12,8 @@ if($LASTEXITCODE -ne 0){throw 'No se verificó el respaldo. No se aplicó la act
 if($LASTEXITCODE -ne 0){throw 'Falló el incremento 15.'}
 & $sqlcmd -S $SqlServer -E -d $Database -b -i (Join-Path $projectRoot 'database/16_Rutas_Visitas_Recorridos.sql')
 if($LASTEXITCODE -ne 0){throw 'Falló el incremento 16.'}
+& $sqlcmd -S $SqlServer -E -d $Database -b -i (Join-Path $projectRoot 'database/17_Asignacion_Directa_SIG.sql')
+if($LASTEXITCODE -ne 0){throw 'Falló el incremento 17.'}
 & dotnet build (Join-Path $projectRoot 'src/AquaControl.API')
 if($LASTEXITCODE -ne 0){throw 'Detenga la instancia anterior de AquaControl y vuelva a compilar.'}
 Write-Host 'Alcance actualizado. Ejecute scripts/run-mobile.ps1 e instale la APK 0.3 en los teléfonos.'

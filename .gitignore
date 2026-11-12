@@ -11,4 +11,8 @@ AquaControl/output/
 AquaControl/mobile/android/.gradle/
 AquaControl/mobile/android/.kotlin/
 AquaControl/mobile/android/local.properties
+*.jks
+*.keystore
+*.p12
+*.pfx
 AquaControl/mobile/android/**/build/

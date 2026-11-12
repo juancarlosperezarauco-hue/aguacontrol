@@ -31,6 +31,14 @@ class ApiClient(serverUrl: String) {
   require(it.startsWith("https://") || it.startsWith("http://")) { "Escriba una dirección HTTP o HTTPS válida." }
   val url = java.net.URI(it)
   require(url.host != null && url.rawUserInfo == null && url.rawQuery == null && url.rawFragment == null) { "Dirección del servidor inválida." }
+  if (BuildConfig.BUILD_TYPE == "local" && url.scheme == "http") {
+   val host = url.host.lowercase()
+   val labels = host.split('.')
+   val parts = labels.map { part -> part.toIntOrNull() ?: -1 }
+   val privateAddress = labels.size == 4 && labels.indices.all { i -> parts[i] in 0..255 && labels[i] == parts[i].toString() } &&
+    (parts[0] == 10 || parts[0] == 127 || (parts[0] == 192 && parts[1] == 168) || (parts[0] == 172 && parts[1] in 16..31))
+   require(host == "localhost" || privateAddress) { "Para HTTP local use la IP privada de su equipo (por ejemplo 192.168.1.5). Para un servidor de Internet use HTTPS." }
+  }
  }
  private val cookies = CookieManager(null, CookiePolicy.ACCEPT_ORIGINAL_SERVER)
  private val http = OkHttpClient.Builder().cookieJar(JavaNetCookieJar(cookies))

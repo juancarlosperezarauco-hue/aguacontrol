@@ -3,6 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace AquaControl.Domain;
 
 [Table("RutasCampo")] public class FieldRoute:Entity {
+ public Guid? RequestId {get;set;}
+ [MaxLength(64)] public string SourceHash {get;set;}="";
  public int OperatorId {get;set;} public int CreatedById {get;set;}
  public DateTime CreatedAt {get;set;}=DateTime.UtcNow; public bool Active {get;set;}=true;
  [MaxLength(20)] public string Kind {get;set;}="CORTE";

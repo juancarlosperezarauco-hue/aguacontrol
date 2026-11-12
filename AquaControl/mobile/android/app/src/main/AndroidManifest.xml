@@ -7,7 +7,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
         android:allowBackup="false"
-        android:label="AquaControl Móvil"
+        android:label="${appLabel}"
         android:theme="@style/Theme.AquaControl"
         android:usesCleartextTraffic="${allowCleartext}">
         <service android:name=".FieldLocationService" android:exported="false" android:foregroundServiceType="location" />

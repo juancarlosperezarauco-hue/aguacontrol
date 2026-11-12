@@ -20,7 +20,7 @@ Desde la carpeta del proyecto original:
 
 Abrir `http://localhost:5080`. Las credenciales iniciales locales están en `AquaControl/.local/acceso-inicial.txt`, excluido del repositorio. No lo publique ni lo incluya en entregas compartidas.
 
-Para usar el sistema, consulte el [Manual de usuario](docs/10_Manual_Usuario.md).
+Para usar el sistema, consulte el [Manual de usuario](docs/10_Manual_Usuario.md). La versión 0.4 incorpora asignación directa desde el mapa, reproducción del historial y visor 3D con fondos. Para el arranque simplificado, la APK local firmada y el paquete de entrega, consulte [Entrega local](docs/14_Entrega_Local.md).
 
 El SQL Server local debe estar encendido. Las bases son distintas:
 

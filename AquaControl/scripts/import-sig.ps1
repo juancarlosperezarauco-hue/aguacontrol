@@ -2,7 +2,7 @@ param([string]$Folder)
 $ErrorActionPreference='Stop'
 $projectRoot=Split-Path $PSScriptRoot -Parent
 $workspace=Split-Path $projectRoot -Parent
-if (!$Folder) { $Folder=Join-Path $workspace 'DatosSIG_Reproj' }
+if (!$Folder) { $Folder=Join-Path $workspace 'DatosSIG_Reproj';if(!(Test-Path -LiteralPath $Folder)){$Folder=Join-Path $projectRoot 'DatosSIG_Reproj'} }
 $sdk=Join-Path $workspace '.tools/dotnet/dotnet.exe'
 if (!(Test-Path -LiteralPath $sdk)) { $sdk=(Get-Command dotnet).Source }
 $env:AQUA_SIG_PATH=(Resolve-Path -LiteralPath $Folder).Path

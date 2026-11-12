@@ -25,4 +25,10 @@ jobs:
       - name: Compilar backend
         run: dotnet build AquaControl/src/AquaControl.API/AquaControl.API.csproj --no-restore --configuration Release
       - name: Verificar JavaScript
-        run: node --check AquaControl/Web/app.js
+        run: |
+          for file in AquaControl/Web/*.js; do node --check "$file"; done
+          node AquaControl/tests/browser-models.cjs
+      - name: Probar cálculo de rutas sin base de datos
+        run: dotnet run --project AquaControl/tests/Scope --configuration Release
+      - name: Revisar dependencias
+        run: dotnet list AquaControl/src/AquaControl.API package --vulnerable --include-transitive

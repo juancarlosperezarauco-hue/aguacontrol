@@ -210,3 +210,13 @@ Los cinco roles base son fijos. El administrador puede crear perfiles administra
 | No puede crear aviso | Verifique que existe un contrato activo para el servicio. |
 | El mapa no carga | Recargue la página y compruebe la conexión al servidor. |
 
+
+## 13. Asignación directa, historial y entrega local
+
+En **Asignaciones y rutas** ya puede buscar los servicios elegibles, seleccionar los medidores en el mapa o en la lista, indicar operario, supervisor, fecha e instrucciones y calcular la ruta. Revise la vista previa y pulse **Crear órdenes y guardar asignación**; no necesita crear antes cada orden. El sistema valida avisos/deuda para corte, estado cortado para reconexión y medidor activo/período para lecturas. **Usar órdenes existentes** mantiene disponible el flujo anterior.
+
+En **Monitoreo de campo**, consulte un operario y día UTC. Use Reproducir/Pausar, Volver al inicio, Velocidad y el control de posición. Puede exportar posiciones y visitas a CSV. Se reproduce el historial recibido y no se inventan ubicaciones entre muestras.
+
+El **Visor 3D** permite elegir calles, satélite, topográfico o sin fondo, activar capas, ajustar inclinación y volver a la vista superior. Solo muestra los servicios encontrados en la búsqueda. Las alturas son esquemáticas.
+
+Para ejecutar e instalar la APK firmada en la red local, consulte [Entrega local](14_Entrega_Local.md).

@@ -17,7 +17,7 @@ public record RoutePreview(PlanRoute Request,string PreviewHash,StreetPlan Netwo
 
 public class RoutingService(IData db,AquaService service,IStreetNetwork network) {
  static readonly string[] Pending=["PENDIENTE","ASIGNADA","REPROGRAMADA","EN_CAMINO"];
- async Task CheckOperator(Actor a,int operatorId,string kind){
+ internal async Task CheckOperator(Actor a,int operatorId,string kind){
   a.Require("orders.manage");Require(kind is "CORTE" or "RECONEXION" or "LECTURA","Tipo de recorrido inválido.");
   var role=kind=="LECTURA"?RolePolicy.Reader:RolePolicy.Technician;
   Require(await (from ur in db.Set<UserRole>() join r in db.Set<Role>() on ur.RoleId equals r.Id join u in db.Set<User>() on ur.UserId equals u.Id where u.Id==operatorId&&u.Active&&r.Active&&r.Name==role select u.Id).AnyAsync(),"Seleccione un operario de la especialidad correspondiente.");
@@ -54,23 +54,28 @@ public class RoutingService(IData db,AquaService service,IStreetNetwork network)
  public async Task<FieldRoute> Save(Actor a,SaveRoute r){
   a.Require("orders.manage");using var tx=await db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
   var (preview,selected)=await Prepare(a,r.Plan);Require(preview.PreviewHash==r.PreviewHash,"Los trabajos, asignaciones o vías cambiaron. Calcule y revise la ruta otra vez.");
-  foreach(var old in await db.Set<FieldRoute>().Where(x=>x.OperatorId==r.Plan.OperatorId&&x.Active).ToListAsync())old.Active=false;
+  var route=await Persist(a,r.Plan,preview.Network,selected);await tx.CommitAsync();return route;
+ }
+ internal async Task<FieldRoute> Persist(Actor a,PlanRoute request,StreetPlan street,List<WorkOrder> selected,Guid? requestId=null,string sourceHash=""){
+  a.Require("orders.manage");Require(db.Database.CurrentTransaction!=null,"Guardar una ruta requiere transacción.");
+  foreach(var old in await db.Set<FieldRoute>().Where(x=>x.OperatorId==request.OperatorId&&x.Active).ToListAsync())old.Active=false;
   await db.SaveChangesAsync();
-  var route=new FieldRoute{OperatorId=r.Plan.OperatorId,CreatedById=a.Id,Kind=r.Plan.Kind,TravelMode=r.Plan.TravelMode,StartLatitude=r.Plan.StartLatitude,StartLongitude=r.Plan.StartLongitude,DistanceMeters=preview.Network.DistanceMeters,NetworkHash=preview.Network.NetworkHash,PathJson=JsonSerializer.Serialize(preview.Network.Path)};
+  var route=new FieldRoute{RequestId=requestId,SourceHash=sourceHash,OperatorId=request.OperatorId,CreatedById=a.Id,Kind=request.Kind,TravelMode=request.TravelMode,StartLatitude=request.StartLatitude,StartLongitude=request.StartLongitude,DistanceMeters=street.DistanceMeters,NetworkHash=street.NetworkHash,PathJson=JsonSerializer.Serialize(street.Path)};
   db.Set<FieldRoute>().Add(route);await db.SaveChangesAsync();
-  foreach(var stop in preview.Network.Stops){
+  foreach(var stop in street.Stops){
    var order=selected.Single(o=>o.Id==stop.OrderId);
    var assignment=await db.Set<Assignment>().SingleOrDefaultAsync(x=>x.OrderId==order.Id&&x.End==null);
    if(assignment==null){
-    assignment=new Assignment{OrderId=order.Id,OperatorId=r.Plan.OperatorId,AssignedById=a.Id,Reason=$"Ruta {route.Id} ({r.Plan.Kind})."};db.Set<Assignment>().Add(assignment);order.Status="ASIGNADA";order.CutAuthorizedAt=null;
+    assignment=new Assignment{OrderId=order.Id,OperatorId=request.OperatorId,AssignedById=a.Id,Reason=$"Ruta {route.Id} ({request.Kind})."};db.Set<Assignment>().Add(assignment);order.Status="ASIGNADA";order.CutAuthorizedAt=null;
     db.Set<OrderEvent>().Add(new(){OrderId=order.Id,UserId=a.Id,Action="orden.asignar",Detail=assignment.Reason});await db.SaveChangesAsync();
    }
-   Require(assignment.OperatorId==r.Plan.OperatorId,"La orden fue reasignada.");
+   Require(assignment.OperatorId==request.OperatorId,"La orden fue reasignada.");
    db.Set<RouteStop>().Add(new(){RouteId=route.Id,OrderId=order.Id,AssignmentId=assignment.Id,Sequence=stop.Sequence,DistanceMeters=stop.DistanceMeters,AccessMeters=stop.AccessMeters});
   }
-  db.Set<Notification>().Add(new(){UserId=r.Plan.OperatorId,Message=$"Ruta #{route.Id}: {selected.Count} trabajos de {route.Kind}. Actualice la APK para ver el orden por vías."});
-  service.Audit(a,"ruta.guardar",route.Id.ToString(),$"Dijkstra · {selected.Count} paradas · {route.DistanceMeters:F0} m.");await db.SaveChangesAsync();await tx.CommitAsync();return route;
+  db.Set<Notification>().Add(new(){UserId=request.OperatorId,Message=$"Ruta #{route.Id}: {selected.Count} trabajos de {route.Kind}. Actualice la APK para ver el orden por vías."});
+  service.Audit(a,"ruta.guardar",route.Id.ToString(),$"Dijkstra · {selected.Count} paradas · {route.DistanceMeters:F0} m.");await db.SaveChangesAsync();return route;
  }
+
  public async Task<object> Routes(Actor a){
   a.Require("orders.read");var routes=await db.Set<FieldRoute>().AsNoTracking().Where(x=>x.Active&&(a.Can("orders.manage")||x.OperatorId==a.Id)).OrderByDescending(x=>x.Id).Take(50).ToListAsync();
   var ids=routes.Select(x=>x.Id).ToArray();

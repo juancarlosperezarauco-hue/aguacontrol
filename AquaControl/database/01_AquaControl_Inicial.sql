@@ -279,6 +279,8 @@ GO
 
 CREATE TABLE [RutasCampo] (
     [Id] int NOT NULL IDENTITY,
+    [RequestId] uniqueidentifier NULL,
+    [SourceHash] nvarchar(64) NOT NULL,
     [OperatorId] int NOT NULL,
     [CreatedById] int NOT NULL,
     [CreatedAt] datetime2 NOT NULL,
@@ -1194,6 +1196,10 @@ GO
 
 
 CREATE UNIQUE INDEX [IX_RutasCampo_OperatorId] ON [RutasCampo] ([OperatorId]) WHERE [Active]=1;
+GO
+
+
+CREATE UNIQUE INDEX [IX_RutasCampo_RequestId] ON [RutasCampo] ([RequestId]) WHERE [RequestId] IS NOT NULL;
 GO
 
 

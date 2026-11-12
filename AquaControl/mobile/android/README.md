@@ -1,4 +1,4 @@
-# AquaControl Móvil 0.3 · Android
+# AquaControl Móvil 0.4 · Android
 
 Aplicación nativa para operarios y monitoreo de supervisión. Comparte la base y la API del sistema web; no lleva una copia de clientes ficticios.
 
@@ -57,7 +57,7 @@ Abrir esta carpeta en Android Studio y ejecutar **Build → Build APK(s)**. Si e
 
 APK de prueba: `app/build/outputs/apk/debug/app-debug.apk`.
 
-La APK se genera localmente y está excluida de Git. Verifique su huella con `Get-FileHash app/build/outputs/apk/debug/app-debug.apk -Algorithm SHA256`. La versión es 0.3.0 (código 3). Las pruebas de cámara y GPS requieren un teléfono físico.
+La APK se genera localmente y está excluida de Git. Verifique su huella con `Get-FileHash app/build/outputs/apk/debug/app-debug.apk -Algorithm SHA256`. La versión es 0.4.0 (código 4). Las pruebas de cámara y GPS requieren un teléfono físico.
 
 - Emulador Android: servidor `http://10.0.2.2:5080`.
 - Teléfono en la misma red: ejecutar el backend con `scripts/run-mobile.ps1` (equivalente a `scripts/run.ps1 -Host lan`) y usar `http://IP_DEL_SERVIDOR:5080`. El script muestra la dirección de la interfaz con puerta de enlace, evitando confundirla con IPs de VMware o VirtualBox. El firewall debe permitir el ejecutable de AquaControl en el perfil de red usado.
@@ -70,3 +70,7 @@ Transferir el APK por un canal privado e instalarlo en un Android 8.0 o superior
 ## Comprobaciones
 
 Las pruebas SQL del proyecto `tests/Roles` incluyen aislamiento por operario, jornadas, GPS inválido/antiguo, suplantación, fin de jornada y fotografía obligatoria. Las pruebas de servicios no sustituyen una prueba física de permisos, GPS, cámara, red y consumo de batería en los dispositivos que se usarán.
+
+## Entrega local firmada
+
+`./scripts/build-mobile-local.ps1` desde AquaControl genera `output/mobile/AquaControl-Local-v0.4.apk`. La variante local (`bo.aquacontrol.movil.local`) se instala aparte de debug, está firmada con una clave privada del equipo, no es depurable y permite HTTP solo a IPs privadas/locales. Para destinos de Internet exige HTTPS. Los secretos de firma se guardan en `.local/signing`, excluido de Git y del paquete. Conservarlos para futuras actualizaciones. Consulte [Entrega local](../../docs/14_Entrega_Local.md).
